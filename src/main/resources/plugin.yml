@@ -1,0 +1,10 @@
+name: HycraftQuestsAddons
+authors:
+  - JustOp_
+version: '1.0-SNAPSHOT'
+main: fr.justop.hycraftQuestsAddons.HycraftQuestsAddons
+api-version: '1.20'
+depend:
+  - BeautyQuests
+
+
