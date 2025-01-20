@@ -7,6 +7,7 @@ import fr.justop.hycraftQuestsAddons.listeners.GoatsListener;
 import fr.justop.hycraftQuestsAddons.stages.StageItemFrameClick;
 import fr.justop.hycraftQuestsAddons.objects.CuboidRegion;
 import fr.skytasul.quests.api.QuestsAPI;
+import fr.skytasul.quests.api.events.PlayerSetStageEvent;
 import fr.skytasul.quests.api.stages.StageType;
 import fr.skytasul.quests.api.stages.StageTypeRegistry;
 import fr.skytasul.quests.api.utils.XMaterial;

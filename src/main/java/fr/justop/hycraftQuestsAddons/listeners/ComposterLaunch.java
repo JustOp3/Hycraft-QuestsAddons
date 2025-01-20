@@ -135,6 +135,7 @@ public class ComposterLaunch implements Listener {
 
 	private void slowFall(Player player)
 	{
+		player.setGameMode(GameMode.ADVENTURE);
 		new BukkitRunnable() {
 			double velocity = -0.1;
 
@@ -152,6 +153,7 @@ public class ComposterLaunch implements Listener {
 				} else {
 					this.cancel();
 					indice = 0;
+					player.setGameMode(GameMode.SURVIVAL);
 				}
 			}
 		}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 1);
