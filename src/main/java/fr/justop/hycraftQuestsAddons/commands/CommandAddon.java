@@ -1,7 +1,7 @@
 package fr.justop.hycraftQuestsAddons.commands;
 
 import fr.justop.hycraftQuestsAddons.HycraftQuestsAddons;
-import org.bukkit.Bukkit;
+import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -38,16 +38,41 @@ public class CommandAddon implements CommandExecutor {
 		if(command.getName().equals("startStage4"))
 		{
 			Player player = Bukkit.getPlayer(args[0]);
+			HycraftQuestsAddons.getInstance().boxPlayer(player);
+
 			new BukkitRunnable()
 			{
 				int count = 0;
 				@Override
 				public void run()
 				{
+					if(count == 2)
+					{
+						player.sendMessage(stage4Dialog.get(0));
+						player.sendMessage(stage4Dialog.get(1));
+					} else if (count == 5) {
+						player.sendMessage(stage4Dialog.get(2));
+						player.sendMessage(stage4Dialog.get(3));
+					} else if (count == 7) {
+						player.sendMessage(stage4Dialog.get(4));
+						player.sendMessage(stage4Dialog.get(5));
+					} else if (count > 7) {
+						player.sendMessage(stage4Dialog.get(count - 2));
+					}
+					if(count == 11)
+					{
+						this.cancel();
+						player.sendMessage("");
+						player.sendMessage(HycraftQuestsAddons.PREFIX + "§eIl semblerait que vous ayez perdu contact avec votre locuteur Xandros. Il vous faudra trouvez un autre moyen de vous extirper de cet endroit...");
+						player.playSound(player.getLocation(), Sound.ITEM_FIRECHARGE_USE, 1.0f, 1.0f);
 
+						HycraftQuestsAddons.getInstance().unboxPlayer(player);
+					}
+					count ++;
 				}
 
 			}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
+			return true;
 		}
 		return false;
 	}

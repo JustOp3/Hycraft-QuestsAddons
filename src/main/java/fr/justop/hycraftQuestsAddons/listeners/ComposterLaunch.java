@@ -22,7 +22,7 @@ public class ComposterLaunch implements Listener {
 	private final int LAUNCH_HEIGHT = 200;
 	private int indice = 0;
 	private final Location TARGET_LOCATION = new Location(Bukkit.getWorld("prehistoire"), -34.5, 256, 207.5, 90f, 40f);
-	List<String> xandrosDialog1 = Arrays.asList("§6§lXandros §r§e: Hahaha! Tu vois ça, ma vieille bricole fonctionne toujours à merveille!", "§e§lXandros §r§e: Ok, j'ai oublié de te préciser un petit détail... Le diplodocus est très sensible sur certaines parties de sa peau.",
+	List<String> xandrosDialog1 = Arrays.asList("§6§lXandros §r§e: Hahaha! Tu vois ça, ma vieille bricole fonctionne toujours à merveille!", "§6§lXandros §r§e: Ok, j'ai oublié de te préciser un petit détail... Le diplodocus est très sensible sur certaines parties de sa peau.",
 			"§6§lXandros §r§e: Seuls les blocs les plus durs sauront tromper ses sensation, c'est le cas de §6§lla concrete bleue §r§eou bien du §6§lcorail§r§e!",
 			"§6§lXandros §r§e: Si tu a le malheur de marcher sur le reste de sa peau, sa colère risque s'être terrible",
 			"§6§lXandros §r§e: Bon ceci dit, à toi de jouer, va récupérer la corne et je ensuite je te ramènerai à moi.");
@@ -42,17 +42,7 @@ public class ComposterLaunch implements Listener {
 			if (block.getType() == Material.COMPOSTER) {
 				event.setCancelled(true);
 
-				Bukkit.getScheduler().runTask(HycraftQuestsAddons.getInstance(), () -> {
-					Location playerLoc = player.getLocation().add(0, 1, 0);
-					World world = player.getWorld();
-					for (int x = -1; x <= 1; x++) {
-						for (int z = -1; z <= 1; z++) {
-							if (x == 0 && z == 0) continue;
-							world.getBlockAt(playerLoc.clone().add(x, 0, z)).setType(Material.BARRIER);
-							world.getBlockAt(playerLoc.clone().add(0, 1, 0)).setType(Material.BARRIER);
-						}
-					}
-				});
+				HycraftQuestsAddons.getInstance().boxPlayer(player);
 
 				new BukkitRunnable() {
 					int countdown = 3;
@@ -69,20 +59,8 @@ public class ComposterLaunch implements Listener {
 						} else {
 							this.cancel();
 
-							Bukkit.getScheduler().runTask(HycraftQuestsAddons.getInstance(), () -> {
-								Location playerLoc = player.getLocation().add(0, 1, 0);
-								World world1 = player.getWorld();
-								for (int x = -1; x <= 1; x++) {
-									for (int z = -1; z <= 1; z++) {
-										if (x == 0 && z == 0) continue;
-										Block barrierBlock = world1.getBlockAt(playerLoc.clone().add(x, 0, z));
-										if (barrierBlock.getType() == Material.BARRIER) {
-											barrierBlock.setType(Material.AIR);
-											world1.getBlockAt(playerLoc.clone().add(0, 1, 0)).setType(Material.AIR);
-										}
-									}
-								}
-							});
+							HycraftQuestsAddons.getInstance().unboxPlayer(player);
+							player.sendMessage("");
 							player.sendMessage("§6§lXandros §r§e: C'est parti mon kiki, on se reparle la haut!");
 							launchPlayer(player);
 						}
@@ -125,7 +103,7 @@ public class ComposterLaunch implements Listener {
 									player.setFlying(false);
 									slowFall(player);
 								}
-							}.runTaskLater(HycraftQuestsAddons.getInstance(), 40);
+							}.runTaskLater(HycraftQuestsAddons.getInstance(), 20);
 						}
 					}.runTaskLater(HycraftQuestsAddons.getInstance(), 20);
 				}
@@ -136,6 +114,7 @@ public class ComposterLaunch implements Listener {
 	private void slowFall(Player player)
 	{
 		player.setGameMode(GameMode.ADVENTURE);
+		player.sendMessage("");
 		new BukkitRunnable() {
 			double velocity = -0.1;
 
@@ -143,6 +122,7 @@ public class ComposterLaunch implements Listener {
 			public void run() {
 				if (player.getLocation().getY() > TARGET_LOCATION.getY() - 41) { // Stop fall near the ground
 					player.setVelocity(new Vector(0, velocity, 0));
+					player.setGameMode(GameMode.ADVENTURE);
 
 					if (player.getTicksLived() % 90 == 0) {
 						player.sendMessage(xandrosDialog1.get(indice));
@@ -153,7 +133,6 @@ public class ComposterLaunch implements Listener {
 				} else {
 					this.cancel();
 					indice = 0;
-					player.setGameMode(GameMode.SURVIVAL);
 				}
 			}
 		}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 1);

@@ -11,8 +11,9 @@ import fr.skytasul.quests.api.events.PlayerSetStageEvent;
 import fr.skytasul.quests.api.stages.StageType;
 import fr.skytasul.quests.api.stages.StageTypeRegistry;
 import fr.skytasul.quests.api.utils.XMaterial;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
+import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -80,6 +81,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     private void onCommands()
     {
         this.getCommand("registerPlayerGoats").setExecutor(new CommandAddon());
+        this.getCommand("startStage4").setExecutor(new CommandAddon());
     }
 
     private void initializeItemFramesStage()
@@ -88,6 +90,40 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         stages.register(new StageType<>("INTERACT_ITEM_FRAME", StageItemFrameClick.class,"§aItemFrame clic",
                 StageItemFrameClick::deserialize, item(XMaterial.ITEM_FRAME, "§eItemFrame clic"),
                 StageItemFrameClick.Creator::new));
+    }
+
+    public void boxPlayer(Player player)
+    {
+        player.setGameMode(GameMode.ADVENTURE);
+        Bukkit.getScheduler().runTask(HycraftQuestsAddons.getInstance(), () -> {
+            Location playerLoc = player.getLocation().add(0, 1, 0);
+            World world = player.getWorld();
+            for (int x = -1; x <= 1; x++) {
+                for (int z = -1; z <= 1; z++) {
+                    if (x == 0 && z == 0) continue;
+                    world.getBlockAt(playerLoc.clone().add(x, 0, z)).setType(Material.BARRIER);
+                    world.getBlockAt(playerLoc.clone().add(0, 1, 0)).setType(Material.BARRIER);
+                }
+            }
+        });
+    }
+
+    public void unboxPlayer(Player player)
+    {
+        Bukkit.getScheduler().runTask(HycraftQuestsAddons.getInstance(), () -> {
+            Location playerLoc = player.getLocation().add(0, 1, 0);
+            World world1 = player.getWorld();
+            for (int x = -1; x <= 1; x++) {
+                for (int z = -1; z <= 1; z++) {
+                    if (x == 0 && z == 0) continue;
+                    Block barrierBlock = world1.getBlockAt(playerLoc.clone().add(x, 0, z));
+                    if (barrierBlock.getType() == Material.BARRIER) {
+                        barrierBlock.setType(Material.AIR);
+                        world1.getBlockAt(playerLoc.clone().add(0, 1, 0)).setType(Material.AIR);
+                    }
+                }
+            }
+        });
     }
 
     public List<Location> getTriggerLocations() {
