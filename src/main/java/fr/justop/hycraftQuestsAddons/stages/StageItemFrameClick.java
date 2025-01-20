@@ -1,4 +1,4 @@
-package fr.justop.hycraftQuestsAddons.listeners;
+package fr.justop.hycraftQuestsAddons.stages;
 
 import fr.justop.hycraftQuestsAddons.objects.BQLocation;
 import fr.skytasul.quests.api.editors.WaitBlockClick;
@@ -59,13 +59,9 @@ public class StageItemFrameClick extends AbstractStage implements Locatable.Prec
     @EventHandler
     public void onInteract(PlayerInteractEntityEvent e) {
         if (e.getRightClicked().getType() != EntityType.ITEM_FRAME) return;
-        if (MinecraftVersion.MAJOR >= 9 && e.getHand() != EquipmentSlot.HAND) return;
 
         ItemFrame itemFrame = (ItemFrame) e.getRightClicked();
-        e.getPlayer().sendMessage(lc.toString());
-        e.getPlayer().sendMessage(getAttachedBlock(itemFrame).getLocation().toString());
-
-        if (!getAttachedBlock(itemFrame).getLocation().equals(lc)) return;
+        if (!getAttachedBlock(itemFrame).getLocation().toString().equals(lc.toString())) return;
 
         e.getPlayer().sendMessage("aAa");
 

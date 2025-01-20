@@ -1,24 +1,19 @@
 package fr.justop.hycraftQuestsAddons;
 
+import fr.justop.hycraftQuestsAddons.commands.CommandAddon;
+import fr.justop.hycraftQuestsAddons.listeners.ComposterLaunch;
 import fr.justop.hycraftQuestsAddons.listeners.DropperListener;
-import fr.justop.hycraftQuestsAddons.listeners.StageItemFrameClick;
+import fr.justop.hycraftQuestsAddons.listeners.GoatsListener;
+import fr.justop.hycraftQuestsAddons.stages.StageItemFrameClick;
 import fr.justop.hycraftQuestsAddons.objects.CuboidRegion;
 import fr.skytasul.quests.api.QuestsAPI;
-import fr.skytasul.quests.api.QuestsAPIProvider;
-import fr.skytasul.quests.api.gui.ItemUtils;
-import fr.skytasul.quests.api.localization.Lang;
-import fr.skytasul.quests.api.players.PlayerAccount;
-import fr.skytasul.quests.api.players.PlayersManager;
-import fr.skytasul.quests.api.stages.StageController;
 import fr.skytasul.quests.api.stages.StageType;
 import fr.skytasul.quests.api.stages.StageTypeRegistry;
-import fr.skytasul.quests.api.stages.creation.StageCreation;
 import fr.skytasul.quests.api.utils.XMaterial;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +31,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     private final List<Location> triggerLocations = new ArrayList<>();
     private final HashMap<String, CuboidRegion> regions = new HashMap<>();
     private final HashMap<UUID, Boolean> playerConstraints = new HashMap<>();
+    private final HashMap<UUID, List<Integer>> goatsCounter = new HashMap<>();
 
     @Override
     public void onEnable() {
@@ -67,6 +63,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         this.triggerLocations.add(new Location(getServer().getWorld("prehistoire"), 388.0D, 89.0D, 394.0D));
 
         onListeners();
+        onCommands();
 
         Bukkit.getConsoleSender().sendMessage("Plugin initialisé");
     }
@@ -75,6 +72,13 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     {
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new DropperListener(), this);
+        pm.registerEvents(new GoatsListener(), this);
+        pm.registerEvents(new ComposterLaunch(), this);
+    }
+
+    private void onCommands()
+    {
+        this.getCommand("registerPlayerGoats").setExecutor(new CommandAddon());
     }
 
     private void initializeItemFramesStage()
@@ -105,5 +109,9 @@ public final class HycraftQuestsAddons extends JavaPlugin {
 
     public HashMap<UUID, Boolean> getPlayerConstraints() {
         return playerConstraints;
+    }
+
+    public HashMap<UUID, List<Integer>> getGoatsCounter() {
+        return goatsCounter;
     }
 }
