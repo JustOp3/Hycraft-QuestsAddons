@@ -67,6 +67,8 @@ public class CommandAddon implements CommandExecutor {
 						player.playSound(player.getLocation(), Sound.ITEM_FIRECHARGE_USE, 1.0f, 1.0f);
 
 						HycraftQuestsAddons.getInstance().unboxPlayer(player);
+						if (HycraftQuestsAddons.getInstance().getPhase1().containsKey(player.getUniqueId())) HycraftQuestsAddons.getInstance().getPhase1().remove(player.getUniqueId());
+						HycraftQuestsAddons.getInstance().getPhase2().put(player.getUniqueId(), "active");
 					}
 					count ++;
 				}

@@ -101,6 +101,7 @@ public class ComposterLaunch implements Listener {
 								public void run() {
 									player.teleport(TARGET_LOCATION);
 									player.setFlying(false);
+									HycraftQuestsAddons.getInstance().getPhase1().put(player.getUniqueId(), "active");
 									slowFall(player);
 								}
 							}.runTaskLater(HycraftQuestsAddons.getInstance(), 20);

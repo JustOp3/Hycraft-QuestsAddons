@@ -1,7 +1,9 @@
 package fr.justop.hycraftQuestsAddons;
 
 import fr.justop.hycraftQuestsAddons.commands.CommandAddon;
+import fr.justop.hycraftQuestsAddons.commands.PlayerCommand;
 import fr.justop.hycraftQuestsAddons.listeners.ComposterLaunch;
+import fr.justop.hycraftQuestsAddons.listeners.DiploListener;
 import fr.justop.hycraftQuestsAddons.listeners.DropperListener;
 import fr.justop.hycraftQuestsAddons.listeners.GoatsListener;
 import fr.justop.hycraftQuestsAddons.stages.StageItemFrameClick;
@@ -17,10 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static fr.skytasul.quests.api.gui.ItemUtils.item;
 
@@ -34,6 +33,14 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     private final HashMap<String, CuboidRegion> regions = new HashMap<>();
     private final HashMap<UUID, Boolean> playerConstraints = new HashMap<>();
     private final HashMap<UUID, List<Integer>> goatsCounter = new HashMap<>();
+    private final Map<UUID, String> phase1 = new HashMap<>();
+    private final Map<UUID, String> phase2 = new HashMap<>();
+    private final List<Material> allowedBlocks = Arrays.asList(
+            Material.TUBE_CORAL_BLOCK,
+            Material.BLUE_CONCRETE,
+            Material.SLIME_BLOCK
+    );
+
 
     @Override
     public void onEnable() {
@@ -74,6 +81,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     {
         PluginManager pm = Bukkit.getPluginManager();
         pm.registerEvents(new DropperListener(), this);
+        pm.registerEvents(new DiploListener(), this);
         pm.registerEvents(new GoatsListener(), this);
         pm.registerEvents(new ComposterLaunch(), this);
     }
@@ -82,6 +90,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     {
         this.getCommand("registerPlayerGoats").setExecutor(new CommandAddon());
         this.getCommand("startStage4").setExecutor(new CommandAddon());
+        this.getCommand("quete").setExecutor(new PlayerCommand());
     }
 
     private void initializeItemFramesStage()
@@ -150,5 +159,17 @@ public final class HycraftQuestsAddons extends JavaPlugin {
 
     public HashMap<UUID, List<Integer>> getGoatsCounter() {
         return goatsCounter;
+    }
+
+    public Map<UUID, String> getPhase2() {
+        return phase2;
+    }
+
+    public Map<UUID, String> getPhase1() {
+        return phase1;
+    }
+
+    public List<Material> getAllowedBlocks() {
+        return allowedBlocks;
     }
 }
