@@ -48,24 +48,22 @@ public class DropperListener implements Listener
         for (String name : HycraftQuestsAddons.getInstance().getRegions().keySet()) {
             if (HycraftQuestsAddons.getInstance().getRegions().get("TeleportRegion").isInside(to)) {
                 CuboidRegion region = HycraftQuestsAddons.getInstance().getRegions().get("TeleportRegion");
-                Location blockBelow = to.clone().subtract(0, 1, 0);
                 if (to.getBlock().getType() == Material.WATER && HycraftQuestsAddons.getInstance().getPlayerConstraints().get(player.getUniqueId())) {
                     HycraftQuestsAddons.getInstance().getPlayerConstraints().put(player.getUniqueId(), false);
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0F, 1.0F);
                     player.sendMessage(HycraftQuestsAddons.PREFIX + "§aFélicitation! Vous êtes parvenu à atteindre le fond de la crevasse sans toucher les parois!");
                 }
-                else if(blockBelow.getBlock().getType().isSolid() && HycraftQuestsAddons.getInstance().getPlayerConstraints().get(player.getUniqueId())) {
-                    if (player.getFallDistance() > 0) {
-                        if (region.getTeleportLocation() != null) {
-                            player.teleport(region.getTeleportLocation());
-                            player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 1.0F);
-                            player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous avez échoué! Veuillez recommencer.");
-                        }
+                if(event.getFrom().getY() > to.getY() && player.isOnGround() && HycraftQuestsAddons.getInstance().getPlayerConstraints().containsKey(player.getUniqueId()))
+                {
+                    if(region.getTeleportLocation() != null){
+                        player.teleport(region.getTeleportLocation());
+                        player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                        player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous avez échoué! Veuillez recommencer.");
                     }
                 }
                 return;
             }
-            if (HycraftQuestsAddons.getInstance().getRegions().get("ResetRegion").isInside(to))
+            if(HycraftQuestsAddons.getInstance().getRegions().get("ResetRegion").isInside(to))
             {
                 HycraftQuestsAddons.getInstance().getPlayerConstraints().put(player.getUniqueId(), true);
             }
@@ -87,6 +85,6 @@ public class DropperListener implements Listener
 
         player.teleport(new Location(player.getWorld(), 386.0D, 91.0D, 392.0D, -45.0F, 0.0F));
         player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 1.0F);
-        player.sendMessage(HycraftQuestsAddons.PREFIX + "§cTu n'as pas accès à cette zone pour le moment! Continue ton aventure au fil de l'histoire pour y accéder. Utilise §b/rang §cpour plus d'informations.");
+        player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous n'avez pas accès à cette zone pour le moment! Continuez votre aventure au fil de l'histoire, décrochez le rang \uA4C7 et commencez la quête '§bUne crevasse scintillante' pour y accéder. Utilise §b/rang §cpour plus d'informations.");
     }
 }

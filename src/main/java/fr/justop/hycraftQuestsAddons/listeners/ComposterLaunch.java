@@ -8,24 +8,24 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class ComposterLaunch implements Listener {
 
 	private final int LAUNCH_HEIGHT = 200;
-	private int indice = 0;
-	private final Location TARGET_LOCATION = new Location(Bukkit.getWorld("prehistoire"), -34.5, 256, 207.5, 90f, 40f);
-	List<String> xandrosDialog1 = Arrays.asList("§6§lXandros §r§e: Hahaha! Tu vois ça, ma vieille bricole fonctionne toujours à merveille!", "§6§lXandros §r§e: Ok, j'ai oublié de te préciser un petit détail... Le diplodocus est très sensible sur certaines parties de sa peau.",
-			"§6§lXandros §r§e: Seuls les blocs les plus durs sauront tromper ses sensation, c'est le cas de §6§lla concrete bleue §r§eou bien du §6§lcorail§r§e!",
-			"§6§lXandros §r§e: Si tu a le malheur de marcher sur le reste de sa peau, sa colère risque s'être terrible",
-			"§6§lXandros §r§e: Bon ceci dit, à toi de jouer, va récupérer la corne et je ensuite je te ramènerai à moi.");
+	private static Set<Player> slowFallPlayers = new HashSet<>();
+	private static int indice = 0;
+	public static final Location TARGET_LOCATION = new Location(Bukkit.getWorld("prehistoire"), -34.5, 256, 207.5, 90f, 40f);
+	static List<String> xandrosDialog1 = Arrays.asList("§6§lXandros §r§e: Hahaha! Tu vois ça, ma vieille bricole fonctionne toujours à merveille!", "§6§lXandros §r§e: Ok, j'ai oublié de te préciser un petit détail... Le diplodocus est très sensible sur certaines parties de sa peau.",
+			"§6§lXandros §r§e: Seuls les blocs les plus durs sauront tromper ses sensation, c'est le cas §6§ldu béton bleu §r§eou bien du §6§lcorail§r§e!",
+			"§6§lXandros §r§e: Si tu as le malheur de marcher sur le reste de sa peau, sa colère risque d'être terrible",
+			"§6§lXandros §r§e: Bon ceci dit, à toi de jouer, va récupérer la corne et ensuite je te ramènerai à moi.");
 
 	@EventHandler
 	public void onPlayerChat(AsyncPlayerChatEvent event) {
@@ -40,35 +40,40 @@ public class ComposterLaunch implements Listener {
 			if (!(acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage() == 1)) return;
 
 			if (block.getType() == Material.COMPOSTER) {
+
 				event.setCancelled(true);
 
-				HycraftQuestsAddons.getInstance().boxPlayer(player);
+				Bukkit.getScheduler().runTask(HycraftQuestsAddons.getInstance(), () ->{
+					HycraftQuestsAddons.getInstance().boxPlayer(player);
 
-				new BukkitRunnable() {
-					int countdown = 3;
+					new BukkitRunnable() {
+						int countdown = 3;
 
-					@Override
-					public void run() {
-						if (countdown > 0) {
-							String color = countdown == 1 ? "\u00a7c" : "\u00a7e";
-							player.sendTitle(color + "" + countdown, "", 0, 20, 0);
-							player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLancement dans §e" + countdown + "§a...");
-							player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, 1.0f + (3 - countdown) * 0.2f);
-							countdown--;
+						@Override
+						public void run() {
+							if (countdown > 0) {
+								String color = countdown == 1 ? "\u00a7c" : "\u00a7e";
+								player.sendTitle(color + "" + countdown, "", 0, 20, 0);
+								player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLancement dans §e" + countdown + "§a...");
+								player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, 1.0f + (3 - countdown) * 0.2f);
+								countdown--;
+							} else {
+								this.cancel();
 
-						} else {
-							this.cancel();
-
-							HycraftQuestsAddons.getInstance().unboxPlayer(player);
-							player.sendMessage("");
-							player.sendMessage("§6§lXandros §r§e: C'est parti mon kiki, on se reparle la haut!");
-							launchPlayer(player);
+								HycraftQuestsAddons.getInstance().unboxPlayer(player);
+								player.sendMessage("");
+								player.sendMessage("§6§lXandros §r§e: C'est parti mon kiki, on se reparle la haut!");
+								player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
+								launchPlayer(player);
+							}
 						}
-					}
-				}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
+					}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
+				});
+
 			}
 		}
 	}
+
 
 	private void launchPlayer(Player player) {
 		World world = player.getWorld();
@@ -112,12 +117,13 @@ public class ComposterLaunch implements Listener {
 		}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 2);
 	}
 
-	private void slowFall(Player player)
+	public static void slowFall(Player player)
 	{
+		slowFallPlayers.add(player);
 		player.setGameMode(GameMode.ADVENTURE);
 		player.sendMessage("");
 		new BukkitRunnable() {
-			double velocity = -0.1;
+			double velocity = -0.095;
 
 			@Override
 			public void run() {
@@ -127,16 +133,26 @@ public class ComposterLaunch implements Listener {
 
 					if (player.getTicksLived() % 90 == 0) {
 						player.sendMessage(xandrosDialog1.get(indice));
+						player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
 						player.sendMessage("");
-						if(indice < 4) indice++;
-						player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+						indice++;
 					}
 				} else {
 					this.cancel();
+					slowFallPlayers.remove(player);
 					indice = 0;
 				}
 			}
 		}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 1);
+	}
+
+	@EventHandler
+	public void onEntityDamage(EntityDamageEvent event) {
+		if (event.getEntity() instanceof Player player) {
+            if (event.getCause() == EntityDamageEvent.DamageCause.FALL && slowFallPlayers.contains(player)) {
+				event.setCancelled(true);
+			}
+		}
 	}
 }
 

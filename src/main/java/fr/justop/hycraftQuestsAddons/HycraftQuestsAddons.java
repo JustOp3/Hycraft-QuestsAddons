@@ -1,6 +1,6 @@
 package fr.justop.hycraftQuestsAddons;
 
-import fr.justop.hycraftQuestsAddons.commands.CommandAddon;
+import fr.justop.hycraftQuestsAddons.commands.ConsoleCommand;
 import fr.justop.hycraftQuestsAddons.commands.PlayerCommand;
 import fr.justop.hycraftQuestsAddons.listeners.ComposterLaunch;
 import fr.justop.hycraftQuestsAddons.listeners.DiploListener;
@@ -38,7 +38,9 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     private final List<Material> allowedBlocks = Arrays.asList(
             Material.TUBE_CORAL_BLOCK,
             Material.BLUE_CONCRETE,
-            Material.SLIME_BLOCK
+            Material.SLIME_BLOCK,
+            Material.AIR,
+            Material.WATER
     );
 
 
@@ -50,14 +52,20 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         initializeItemFramesStage();
 
         regions.put("TeleportRegion", new CuboidRegion(
-                new Location(Bukkit.getWorld("prehistoire"), 382, 83, 390),
-                new Location(Bukkit.getWorld("prehistoire"), 397, -61, 402),
+                new Location(Bukkit.getWorld("prehistoire"), 380, 83, 385),
+                new Location(Bukkit.getWorld("prehistoire"), 399, -61, 402),
                 new Location(Bukkit.getWorld("prehistoire"), 386.0D, 91.0D, 392.0D, -45.0F, 0.0F)
         ));
 
         regions.put("ResetRegion", new CuboidRegion(
                 new Location(Bukkit.getWorld("prehistoire"), 390.0D, 89.0D, 396.0D),
                 new Location(Bukkit.getWorld("prehistoire"), 388.0D, 88.0D, 394.0D),
+                null
+        ));
+
+        regions.put("DiploOpenRegion", new CuboidRegion(
+                new Location(Bukkit.getWorld("prehistoire"), -50, 219, 208),
+                new Location(Bukkit.getWorld("prehistoire"), -50, 217, 206),
                 null
         ));
 
@@ -88,9 +96,10 @@ public final class HycraftQuestsAddons extends JavaPlugin {
 
     private void onCommands()
     {
-        this.getCommand("registerPlayerGoats").setExecutor(new CommandAddon());
-        this.getCommand("startStage4").setExecutor(new CommandAddon());
-        this.getCommand("quete").setExecutor(new PlayerCommand());
+        this.getCommand("registerPlayerGoats").setExecutor(new ConsoleCommand());
+        this.getCommand("startStage4").setExecutor(new ConsoleCommand());
+        this.getCommand("endDiplo").setExecutor(new ConsoleCommand());
+        this.getCommand("q").setExecutor(new PlayerCommand());
     }
 
     private void initializeItemFramesStage()

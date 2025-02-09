@@ -61,7 +61,7 @@ public class StageItemFrameClick extends AbstractStage implements Locatable.Prec
         if (e.getRightClicked().getType() != EntityType.ITEM_FRAME) return;
 
         ItemFrame itemFrame = (ItemFrame) e.getRightClicked();
-        if (!getAttachedBlock(itemFrame).getLocation().toString().equals(lc.toString())) return;
+        if (!lc.equals(getAttachedBlock(itemFrame).getLocation())) return;
 
         Player p = e.getPlayer();
 

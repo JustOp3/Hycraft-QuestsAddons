@@ -11,6 +11,12 @@ depend:
 commands:
   registerPlayerGoats:
     description: initialise la Hash Map
+  startStage4:
+    description: force le début d'un dialogue
+  endDiplo:
+    description: tkt frr
+  q:
+    description: pk pas
 
 permissions:
   hycraft.questsaddons.hasfoundgoats:
