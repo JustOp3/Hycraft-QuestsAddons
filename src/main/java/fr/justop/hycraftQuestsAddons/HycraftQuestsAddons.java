@@ -2,10 +2,7 @@ package fr.justop.hycraftQuestsAddons;
 
 import fr.justop.hycraftQuestsAddons.commands.ConsoleCommand;
 import fr.justop.hycraftQuestsAddons.commands.PlayerCommand;
-import fr.justop.hycraftQuestsAddons.listeners.ComposterLaunch;
-import fr.justop.hycraftQuestsAddons.listeners.DiploListener;
-import fr.justop.hycraftQuestsAddons.listeners.DropperListener;
-import fr.justop.hycraftQuestsAddons.listeners.GoatsListener;
+import fr.justop.hycraftQuestsAddons.listeners.*;
 import fr.justop.hycraftQuestsAddons.stages.StageItemFrameClick;
 import fr.justop.hycraftQuestsAddons.objects.CuboidRegion;
 import fr.skytasul.quests.api.QuestsAPI;
@@ -15,10 +12,14 @@ import fr.skytasul.quests.api.stages.StageTypeRegistry;
 import fr.skytasul.quests.api.utils.XMaterial;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.File;
 import java.util.*;
 
 import static fr.skytasul.quests.api.gui.ItemUtils.item;
@@ -42,6 +43,24 @@ public final class HycraftQuestsAddons extends JavaPlugin {
             Material.AIR,
             Material.WATER
     );
+
+    private final Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
+    private final List<Location> arenaLocations = Arrays.asList(
+            new Location(Bukkit.getWorld("Challenge"), 0, 100, 0),
+            new Location(Bukkit.getWorld("Challenge"), 500, 100, 0),
+            new Location(Bukkit.getWorld("Challenge"), 1000, 100, 0),
+            new Location(Bukkit.getWorld("Challenge"), 0, 100, 500),
+            new Location(Bukkit.getWorld("Challenge"), 500, 100, 500),
+            new Location(Bukkit.getWorld("Challenge"), 1000, 100, 500),
+            new Location(Bukkit.getWorld("Challenge"), 0, 100, 1000),
+            new Location(Bukkit.getWorld("Challenge"), 500, 100, 1000),
+            new Location(Bukkit.getWorld("Challenge"), 1000, 100, 1000)
+    );
+    private final Map<UUID, Integer> activePlayers = new HashMap<>();
+    private final Map<UUID, Integer> remainingMobs = new HashMap<>();
+    private final Map<UUID, Integer> mobsKilled = new HashMap<>();
+    private final Map<UUID, BossBar> bossBars = new HashMap<>();
+    private final Map<UUID, BukkitRunnable> activeTasks = new HashMap<>();
 
 
     @Override
@@ -92,6 +111,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         pm.registerEvents(new DiploListener(), this);
         pm.registerEvents(new GoatsListener(), this);
         pm.registerEvents(new ComposterLaunch(), this);
+        pm.registerEvents(new ArenaListener(), this);
     }
 
     private void onCommands()
@@ -100,6 +120,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         this.getCommand("startStage4").setExecutor(new ConsoleCommand());
         this.getCommand("endDiplo").setExecutor(new ConsoleCommand());
         this.getCommand("q").setExecutor(new PlayerCommand());
+        this.getCommand("arena").setExecutor(new ConsoleCommand());
     }
 
     private void initializeItemFramesStage()
@@ -144,6 +165,27 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         });
     }
 
+    public void restoreInventory(Player player) {
+        player.getInventory().clear();
+        if (savedInventories.containsKey(player.getUniqueId())) {
+            player.getInventory().setContents(savedInventories.get(player.getUniqueId()));
+            savedInventories.remove(player.getUniqueId());
+        }
+    }
+
+    public void deleteWorld(File worldFolder) {
+        if (worldFolder.exists()) {
+            for (File file : worldFolder.listFiles()) {
+                if (file.isDirectory()) {
+                    deleteWorld(file);
+                } else {
+                    file.delete();
+                }
+            }
+            worldFolder.delete();
+        }
+    }
+
     public List<Location> getTriggerLocations() {
         return this.triggerLocations;
     }
@@ -180,5 +222,33 @@ public final class HycraftQuestsAddons extends JavaPlugin {
 
     public List<Material> getAllowedBlocks() {
         return allowedBlocks;
+    }
+    public Map<UUID, ItemStack[]> getSavedInventories() {
+        return savedInventories;
+    }
+
+    public Map<UUID, Integer> getActivePlayers() {
+        return activePlayers;
+    }
+
+    public Map<UUID, Integer> getRemainingMobs() {
+        return remainingMobs;
+    }
+
+
+    public Map<UUID, Integer> getMobsKilled() {
+        return mobsKilled;
+    }
+
+    public Map<UUID, BossBar> getBossBars() {
+        return bossBars;
+    }
+
+    public List<Location> getArenaLocations() {
+        return arenaLocations;
+    }
+
+    public Map<UUID, BukkitRunnable> getActiveTasks() {
+        return activeTasks;
     }
 }

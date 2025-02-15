@@ -127,7 +127,7 @@ public class ComposterLaunch implements Listener {
 
 			@Override
 			public void run() {
-				if (player.getLocation().getY() > TARGET_LOCATION.getY() - 41) { // Stop fall near the ground
+				if (player.getLocation().getY() > TARGET_LOCATION.getY() - 41) {
 					player.setVelocity(new Vector(0, velocity, 0));
 					player.setGameMode(GameMode.ADVENTURE);
 

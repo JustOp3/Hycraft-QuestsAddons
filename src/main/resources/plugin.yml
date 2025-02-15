@@ -17,6 +17,8 @@ commands:
     description: tkt frr
   q:
     description: pk pas
+  arena:
+    description: ah
 
 permissions:
   hycraft.questsaddons.hasfoundgoats:

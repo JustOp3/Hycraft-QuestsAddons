@@ -1,20 +1,34 @@
 package fr.justop.hycraftQuestsAddons.commands;
 
 import fr.justop.hycraftQuestsAddons.HycraftQuestsAddons;
+import io.lumine.mythic.api.mobs.MythicMob;
+import io.lumine.mythic.bukkit.BukkitAdapter;
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.core.mobs.ActiveMob;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.BookMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
+
+import static org.bukkit.Bukkit.getLogger;
 
 public class ConsoleCommand implements CommandExecutor {
 	private final List<String> stage4Dialog = Arrays.asList("",
@@ -91,6 +105,12 @@ public class ConsoleCommand implements CommandExecutor {
 			}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
 			return true;
 		}
+		if(command.getName().equalsIgnoreCase("arena"))
+		{
+			Player player = Bukkit.getPlayer(args[0]);
+			startArenaChallenge(player);
+			return true;
+		}
 		return false;
 	}
 
@@ -112,4 +132,105 @@ public class ConsoleCommand implements CommandExecutor {
 		block2.setType(Material.BARRIER);
 
 	}
+
+	private void startArenaChallenge(Player player) {
+		saveInventory(player);
+		player.getInventory().clear();
+
+		ItemStack stoneSword = new ItemStack(Material.STONE_SWORD);
+		ItemMeta meta = stoneSword.getItemMeta();
+		if (meta != null) {
+			meta.setUnbreakable(true);
+			stoneSword.setItemMeta(meta);
+		}
+		player.getInventory().addItem(stoneSword);
+
+		Location arenaLocation = getAvailableArena();
+		if (arenaLocation == null) {
+			player.sendMessage("\u00a7cAucune arène disponible.");
+			HycraftQuestsAddons.getInstance().restoreInventory(player);
+			return;
+		}
+
+		arenaLocation.setWorld(Bukkit.getWorld("Challenge"));
+		player.teleport(arenaLocation);
+		HycraftQuestsAddons.getInstance().getActivePlayers().put(player.getUniqueId(), HycraftQuestsAddons.getInstance().getArenaLocations().indexOf(arenaLocation));
+		HycraftQuestsAddons.getInstance().getRemainingMobs().put(player.getUniqueId(), 0);
+		HycraftQuestsAddons.getInstance().getMobsKilled().put(player.getUniqueId(), 0);
+
+		BossBar bossBar = Bukkit.createBossBar("§eProgression: 0/0", BarColor.YELLOW, BarStyle.SOLID);
+		bossBar.addPlayer(player);
+		bossBar.setVisible(true);
+		HycraftQuestsAddons.getInstance().getBossBars().put(player.getUniqueId(), bossBar);
+
+		player.setGameMode(GameMode.ADVENTURE);
+
+		BukkitRunnable task = new BukkitRunnable() {
+			int countdown = 5;
+			@Override
+			public void run() {
+				if (countdown > 0) {
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aDébut dans §e" + countdown + "§a secondes...");
+					player.sendTitle("§e§l" + countdown, null);
+					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, 1.0f);
+					countdown--;
+				} else {
+					startMobWaves(player, arenaLocation);
+					cancel();
+				}
+			}
+		};
+		task.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
+		HycraftQuestsAddons.getInstance().getActiveTasks().put(player.getUniqueId(), task);
+	}
+
+	private void saveInventory(Player player) {
+		HycraftQuestsAddons.getInstance().getSavedInventories().put(player.getUniqueId(), player.getInventory().getContents().clone());
+	}
+
+	private Location getAvailableArena() {
+		int max = HycraftQuestsAddons.getInstance().getActivePlayers().isEmpty() ? -1 : Collections.max(HycraftQuestsAddons.getInstance().getActivePlayers().values());
+		if (max <= 6) {
+            return HycraftQuestsAddons.getInstance().getArenaLocations().get(max + 1);
+		}
+		return null;
+	}
+
+
+	private void startMobWaves(Player player, Location arenaLocation) {
+		List<Location> mobSpawns = Arrays.asList(
+				arenaLocation.clone().add(11, 0, 9),
+				arenaLocation.clone().add(11, 0, -9),
+				arenaLocation.clone().add(-10, 0, 9),
+				arenaLocation.clone().add(-10, 0, -9)
+		);
+
+		BukkitRunnable task = new BukkitRunnable() {
+			int wave = 0;
+			@Override
+			public void run() {
+				if (wave >= 5) {
+					return;
+				}
+
+				int mobCount = 0;
+				for (Location loc : mobSpawns) {
+					MythicMob mob = MythicBukkit.inst().getMobManager().getMythicMob("Plante_mutante").orElse(null);
+					if(mob != null){
+						mob.spawn(BukkitAdapter.adapt(loc),1);
+						mobCount++;
+					}
+				}
+
+				player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
+				player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLa vague §e" + (wave+1) + "§a est apparue. §e(+4)");
+				HycraftQuestsAddons.getInstance().getRemainingMobs().put(player.getUniqueId(), HycraftQuestsAddons.getInstance().getRemainingMobs().get(player.getUniqueId()) + mobCount);
+				wave++;
+			}
+		};
+		task.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20 * 20);
+		HycraftQuestsAddons.getInstance().getActiveTasks().put(player.getUniqueId(), task);
+	}
 }
+
+
