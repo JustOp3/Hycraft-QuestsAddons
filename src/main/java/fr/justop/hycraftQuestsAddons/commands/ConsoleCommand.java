@@ -1,5 +1,6 @@
 package fr.justop.hycraftQuestsAddons.commands;
 
+import fr.justop.hycraftQuestsAddons.BossQuestUtils;
 import fr.justop.hycraftQuestsAddons.HycraftQuestsAddons;
 import io.lumine.mythic.api.mobs.MythicMob;
 import io.lumine.mythic.bukkit.BukkitAdapter;
@@ -13,8 +14,10 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -111,6 +114,28 @@ public class ConsoleCommand implements CommandExecutor {
 			startArenaChallenge(player);
 			return true;
 		}
+		if(command.getName().equalsIgnoreCase("boss"))
+		{
+			Player player = Bukkit.getPlayer(args[0]);
+			if (args[1].equalsIgnoreCase("1")) {
+				BossQuestUtils.startBossFight(player);
+			}
+			return true;
+		}
+		if(command.getName().equalsIgnoreCase("sword"))
+		{
+			Player player = Bukkit.getPlayer(args[0]);
+
+			ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
+			ItemMeta im = sword.getItemMeta();
+			im.setDisplayName("&6&lEpée de Jasper");
+			im.setLore(Arrays.asList("&eRamenez l'arme à Jasper"));
+			im.addEnchant(Enchantment.QUICK_CHARGE, 1, false);
+			im.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+			sword.setItemMeta(im);
+
+			player.getInventory().addItem(sword);
+		}
 		return false;
 	}
 
@@ -134,7 +159,7 @@ public class ConsoleCommand implements CommandExecutor {
 	}
 
 	private void startArenaChallenge(Player player) {
-		saveInventory(player);
+		HycraftQuestsAddons.saveInventory(player);
 		player.getInventory().clear();
 
 		ItemStack stoneSword = new ItemStack(Material.STONE_SWORD);
@@ -145,7 +170,7 @@ public class ConsoleCommand implements CommandExecutor {
 		}
 		player.getInventory().addItem(stoneSword);
 
-		Location arenaLocation = getAvailableArena();
+		Location arenaLocation = BossQuestUtils.getAvailableArena(0);
 		if (arenaLocation == null) {
 			player.sendMessage("\u00a7cAucune arène disponible.");
 			HycraftQuestsAddons.getInstance().restoreInventory(player);
@@ -167,6 +192,7 @@ public class ConsoleCommand implements CommandExecutor {
 
 		BukkitRunnable task = new BukkitRunnable() {
 			int countdown = 5;
+
 			@Override
 			public void run() {
 				if (countdown > 0) {
@@ -175,7 +201,7 @@ public class ConsoleCommand implements CommandExecutor {
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, 1.0f);
 					countdown--;
 				} else {
-					startMobWaves(player, arenaLocation);
+					BossQuestUtils.startMobWaves(player, arenaLocation, 0);
 					cancel();
 				}
 			}
@@ -184,53 +210,6 @@ public class ConsoleCommand implements CommandExecutor {
 		HycraftQuestsAddons.getInstance().getActiveTasks().put(player.getUniqueId(), task);
 	}
 
-	private void saveInventory(Player player) {
-		HycraftQuestsAddons.getInstance().getSavedInventories().put(player.getUniqueId(), player.getInventory().getContents().clone());
-	}
-
-	private Location getAvailableArena() {
-		int max = HycraftQuestsAddons.getInstance().getActivePlayers().isEmpty() ? -1 : Collections.max(HycraftQuestsAddons.getInstance().getActivePlayers().values());
-		if (max <= 6) {
-            return HycraftQuestsAddons.getInstance().getArenaLocations().get(max + 1);
-		}
-		return null;
-	}
-
-
-	private void startMobWaves(Player player, Location arenaLocation) {
-		List<Location> mobSpawns = Arrays.asList(
-				arenaLocation.clone().add(11, 0, 9),
-				arenaLocation.clone().add(11, 0, -9),
-				arenaLocation.clone().add(-10, 0, 9),
-				arenaLocation.clone().add(-10, 0, -9)
-		);
-
-		BukkitRunnable task = new BukkitRunnable() {
-			int wave = 0;
-			@Override
-			public void run() {
-				if (wave >= 5) {
-					return;
-				}
-
-				int mobCount = 0;
-				for (Location loc : mobSpawns) {
-					MythicMob mob = MythicBukkit.inst().getMobManager().getMythicMob("Plante_mutante").orElse(null);
-					if(mob != null){
-						mob.spawn(BukkitAdapter.adapt(loc),1);
-						mobCount++;
-					}
-				}
-
-				player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
-				player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLa vague §e" + (wave+1) + "§a est apparue. §e(+4)");
-				HycraftQuestsAddons.getInstance().getRemainingMobs().put(player.getUniqueId(), HycraftQuestsAddons.getInstance().getRemainingMobs().get(player.getUniqueId()) + mobCount);
-				wave++;
-			}
-		};
-		task.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20 * 20);
-		HycraftQuestsAddons.getInstance().getActiveTasks().put(player.getUniqueId(), task);
-	}
 }
 
 

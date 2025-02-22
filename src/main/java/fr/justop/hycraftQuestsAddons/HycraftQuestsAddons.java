@@ -10,9 +10,12 @@ import fr.skytasul.quests.api.events.PlayerSetStageEvent;
 import fr.skytasul.quests.api.stages.StageType;
 import fr.skytasul.quests.api.stages.StageTypeRegistry;
 import fr.skytasul.quests.api.utils.XMaterial;
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.core.mobs.ActiveMob;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
@@ -46,21 +49,29 @@ public final class HycraftQuestsAddons extends JavaPlugin {
 
     private final Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
     private final List<Location> arenaLocations = Arrays.asList(
-            new Location(Bukkit.getWorld("Challenge"), 0, 100, 0),
-            new Location(Bukkit.getWorld("Challenge"), 500, 100, 0),
-            new Location(Bukkit.getWorld("Challenge"), 1000, 100, 0),
-            new Location(Bukkit.getWorld("Challenge"), 0, 100, 500),
-            new Location(Bukkit.getWorld("Challenge"), 500, 100, 500),
-            new Location(Bukkit.getWorld("Challenge"), 1000, 100, 500),
-            new Location(Bukkit.getWorld("Challenge"), 0, 100, 1000),
-            new Location(Bukkit.getWorld("Challenge"), 500, 100, 1000),
-            new Location(Bukkit.getWorld("Challenge"), 1000, 100, 1000)
+            new Location(Bukkit.getWorld("BossFight1"), 0, 100, 0),
+            new Location(Bukkit.getWorld("BossFight1"), 500, 100, 0),
+            new Location(Bukkit.getWorld("BossFight1"), 1000, 100, 0),
+            new Location(Bukkit.getWorld("BossFight1"), 0, 100, 500),
+            new Location(Bukkit.getWorld("BossFight1"), 500, 100, 500),
+            new Location(Bukkit.getWorld("BossFight1"), 1000, 100, 500),
+            new Location(Bukkit.getWorld("BossFight1"), 0, 100, 1000),
+            new Location(Bukkit.getWorld("BossFight1"), 500, 100, 1000),
+            new Location(Bukkit.getWorld("BossFight1"), 1000, 100, 1000)
     );
     private final Map<UUID, Integer> activePlayers = new HashMap<>();
+    private final Map<UUID, Integer> bossPlayers = new HashMap<>();
     private final Map<UUID, Integer> remainingMobs = new HashMap<>();
     private final Map<UUID, Integer> mobsKilled = new HashMap<>();
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
     private final Map<UUID, BukkitRunnable> activeTasks = new HashMap<>();
+    private final Map<UUID, Boolean> bossPhase = new HashMap<>();
+    private final Map<UUID, ActiveMob> bosses = new HashMap<>();
+    private final Map<UUID, Boolean> spiritPlayers = new HashMap<>();
+    private final Map<UUID, List<Location>> puzzleProgress = new HashMap<>();
+    private final Set<ActiveMob> frozenBosses = new HashSet<>();
+    private final Map<UUID, Location> activeCristalPos = new HashMap<>();
+
 
 
     @Override
@@ -112,6 +123,9 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         pm.registerEvents(new GoatsListener(), this);
         pm.registerEvents(new ComposterLaunch(), this);
         pm.registerEvents(new ArenaListener(), this);
+        pm.registerEvents(new ArrowListener(), this);
+        pm.registerEvents(new FireListener(), this);
+        pm.registerEvents(new FishingListener(), this);
     }
 
     private void onCommands()
@@ -173,18 +187,24 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         }
     }
 
-    public void deleteWorld(File worldFolder) {
-        if (worldFolder.exists()) {
-            for (File file : worldFolder.listFiles()) {
-                if (file.isDirectory()) {
-                    deleteWorld(file);
-                } else {
-                    file.delete();
-                }
-            }
-            worldFolder.delete();
-        }
+    public static void saveInventory(Player player) {
+        HycraftQuestsAddons.getInstance().getSavedInventories().put(player.getUniqueId(), player.getInventory().getContents().clone());
+        player.getInventory().clear();
     }
+
+    public static void removeNearbyEntities(Player player) {
+        World world = player.getWorld();
+        world.getEntities().stream()
+                .filter(entity -> entity.getLocation().distance(player.getLocation()) <= 100 && !(entity instanceof Player) && isSpecificMythicMob(entity,"Plante_mutante"))
+                .forEach(Entity::remove);
+    }
+
+    public static boolean isSpecificMythicMob(Entity entity, String mobId) {
+        ActiveMob mob = MythicBukkit.inst().getMobManager().getMythicMobInstance(entity);
+        return mob != null && mob.getType().getInternalName().equalsIgnoreCase(mobId);
+    }
+
+
 
     public List<Location> getTriggerLocations() {
         return this.triggerLocations;
@@ -250,5 +270,33 @@ public final class HycraftQuestsAddons extends JavaPlugin {
 
     public Map<UUID, BukkitRunnable> getActiveTasks() {
         return activeTasks;
+    }
+
+    public Map<UUID, Integer> getBossPlayers() {
+        return bossPlayers;
+    }
+
+    public Map<UUID, Boolean> getBossPhase() {
+        return bossPhase;
+    }
+
+    public Map<UUID, ActiveMob> getBosses() {
+        return bosses;
+    }
+
+    public Map<UUID, Boolean> getSpiritPlayers() {
+        return spiritPlayers;
+    }
+
+    public Map<UUID, List<Location>> getPuzzleProgress() {
+        return puzzleProgress;
+    }
+
+    public Set<ActiveMob> getFrozenBosses() {
+        return frozenBosses;
+    }
+
+    public Map<UUID, Location> getActiveCristalPos() {
+        return activeCristalPos;
     }
 }
