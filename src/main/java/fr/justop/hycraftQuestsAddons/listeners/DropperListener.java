@@ -23,9 +23,9 @@ public class DropperListener implements Listener
         PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
 
         Quest quest = questsAPI.getQuestsManager().getQuest(102);
-        assert quest != null;
+        if(quest == null) return;
 
-        if(!(acc.hasQuestDatas(quest)))
+        if(acc.getQuestDatas(quest).getStage() == 2)
         {
             Location playerLocation = player.getLocation();
             for (Location triggerLocation : HycraftQuestsAddons.getInstance().getTriggerLocations()) {
@@ -49,7 +49,7 @@ public class DropperListener implements Listener
             if (HycraftQuestsAddons.getInstance().getRegions().get("TeleportRegion").isInside(to)) {
                 CuboidRegion region = HycraftQuestsAddons.getInstance().getRegions().get("TeleportRegion");
                 if (to.getBlock().getType() == Material.WATER && HycraftQuestsAddons.getInstance().getPlayerConstraints().get(player.getUniqueId())) {
-                    HycraftQuestsAddons.getInstance().getPlayerConstraints().put(player.getUniqueId(), false);
+                    HycraftQuestsAddons.getInstance().getPlayerConstraints().remove(player.getUniqueId());
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0F, 1.0F);
                     player.sendMessage(HycraftQuestsAddons.PREFIX + "§aFélicitation! Vous êtes parvenu à atteindre le fond de la crevasse sans toucher les parois!");
                 }
@@ -85,6 +85,6 @@ public class DropperListener implements Listener
 
         player.teleport(new Location(player.getWorld(), 386.0D, 91.0D, 392.0D, -45.0F, 0.0F));
         player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 1.0F);
-        player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous n'avez pas accès à cette zone pour le moment! Continuez votre aventure au fil de l'histoire, décrochez le rang \uA4C7 et commencez la quête '§bUne crevasse scintillante' pour y accéder. Utilise §b/rang §cpour plus d'informations.");
+        player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous n'avez pas accès à cette zone pour le moment! Continuez votre aventure au fil de l'histoire, décrochez le rang §f\uA4C7 et commencez la quête '§bUne crevasse scintillante' pour y accéder. Utilise §b/rang §cpour plus d'informations.");
     }
 }

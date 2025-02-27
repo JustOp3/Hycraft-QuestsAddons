@@ -3,7 +3,14 @@ package fr.justop.hycraftQuestsAddons.commands;
 import fr.justop.hycraftQuestsAddons.HycraftQuestsAddons;
 import fr.justop.hycraftQuestsAddons.listeners.ComposterLaunch;
 import fr.skytasul.quests.api.QuestsAPI;
+import fr.skytasul.quests.api.options.description.DescriptionSource;
 import fr.skytasul.quests.api.players.PlayerAccount;
+import fr.skytasul.quests.api.players.PlayerQuestDatas;
+import fr.skytasul.quests.api.pools.QuestPool;
+import fr.skytasul.quests.api.quests.Quest;
+import fr.skytasul.quests.api.quests.branches.QuestBranch;
+import fr.skytasul.quests.api.quests.branches.QuestBranchesManager;
+import fr.skytasul.quests.api.stages.StageController;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -58,8 +65,57 @@ public class PlayerCommand implements CommandExecutor {
 					player.teleport(new Location(Bukkit.getWorld("Prehistoire"), -35, 215, 207, 90f, 0f));
 					player.setGameMode(GameMode.ADVENTURE);
 				}
+				break;
 
+			case "info":
+				QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+				PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
 
+				if (acc == null) {
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§cAucun compte de quête trouvé. (contactez un membre du staff)");
+					return false;
+				}
+
+				boolean hasActiveQuest = false;
+
+				for (Quest quest : questsAPI.getQuestsManager().getQuests()) {
+					PlayerQuestDatas questData = acc.getQuestDatas(quest);
+
+					if (questData.hasStarted() && !questData.isFinished()) {
+						hasActiveQuest = true;
+
+						int stage = questData.getStage();
+						QuestBranch playerBranch = quest.getBranchesManager().getPlayerBranch(acc);
+
+						if (playerBranch != null) {
+							StageController currentStage = playerBranch.getRegularStage(stage);
+
+                            String desc = currentStage.getDescriptionLine(acc, DescriptionSource.FORCELINE);
+
+                            player.sendMessage("§6§l➤ Quête en cours : §e" + quest.getName());
+                            player.sendMessage("§7-------------------------------");
+
+                            if (desc != null && !desc.isEmpty()) {
+                                String[] descLines = desc.split("\n");
+                                for (String line : descLines) {
+                                    player.sendMessage("§f▪ " + line);
+                                }
+                            } else {
+                                player.sendMessage(HycraftQuestsAddons.PREFIX + "§eCette étape n'a pas de description.");
+                            }
+
+                            player.sendMessage("§7-------------------------------");
+                        } else {
+							player.sendMessage(HycraftQuestsAddons.PREFIX + "§cImpossible de récupérer la branche active pour la quête : §e" + quest.getName());
+						}
+					}
+				}
+
+				if (!hasActiveQuest) {
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§eVous n'avez aucune quête en cours.");
+				}
+
+				break;
 
 
 		}

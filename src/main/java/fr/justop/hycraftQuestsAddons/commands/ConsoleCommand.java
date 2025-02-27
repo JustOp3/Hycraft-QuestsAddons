@@ -1,11 +1,23 @@
 package fr.justop.hycraftQuestsAddons.commands;
 
+import com.sk89q.worldedit.bukkit.BukkitWorld;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.managers.RegionManager;
+import com.sk89q.worldguard.protection.regions.RegionContainer;
+import com.sk89q.worldguard.protection.regions.RegionQuery;
 import fr.justop.hycraftQuestsAddons.BossQuestUtils;
 import fr.justop.hycraftQuestsAddons.HycraftQuestsAddons;
+import fr.justop.hycraftQuestsAddons.listeners.FireListener;
+import fr.skytasul.quests.api.QuestsAPI;
+import fr.skytasul.quests.api.players.PlayerAccount;
+import io.lumine.mythic.api.adapters.AbstractLocation;
 import io.lumine.mythic.api.mobs.MythicMob;
 import io.lumine.mythic.bukkit.BukkitAdapter;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.core.mobs.ActiveMob;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
@@ -16,6 +28,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -44,6 +57,11 @@ public class ConsoleCommand implements CommandExecutor {
 			"§6§lXandros §r§e: le...",
 			"§6§lXandros §r§e: signal...",
 			"§6§lXandros §r§e: ...");
+
+	private final int raceTimeLimit = 60;
+	private final Location startLocation = new Location(Bukkit.getWorld("Préhistoire"), 100, 65, 100);
+	private final Location spawnLocation = new Location(Bukkit.getWorld("Préhistoire"), 50, 65, 50);
+	private final String finishRegion = "horse_region";
 
 	@Override
 	public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
@@ -95,7 +113,7 @@ public class ConsoleCommand implements CommandExecutor {
 						removeBlock();
 						player.sendMessage("");
 						player.sendMessage(HycraftQuestsAddons.PREFIX + "§eIl semblerait que vous ayez perdu contact avec votre locuteur Xandros. Il vous faudra trouvez un autre moyen de vous extirper de cet endroit... Rappellez vous: si vous ne voulez pas attiser" +
-								"la colère du diplodocus vous devez absolument éviter de marcher sur les blocs autres que §6§lle béton bleu §r§eou bien le §6§lcorail§r§e!");
+								" la colère du diplodocus vous devez absolument éviter de marcher sur les blocs autres que §6§lle béton bleu §r§eou bien le §6§lcorail§r§e!");
 						player.sendMessage("");
 						player.playSound(player.getLocation(), Sound.ITEM_FIRECHARGE_USE, 1.0f, 1.0f);
 
@@ -128,14 +146,21 @@ public class ConsoleCommand implements CommandExecutor {
 
 			ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
 			ItemMeta im = sword.getItemMeta();
-			im.setDisplayName("&6&lEpée de Jasper");
-			im.setLore(Arrays.asList("&eRamenez l'arme à Jasper"));
+			im.setDisplayName("§6§lEpée de Jasper");
+			im.setLore(Arrays.asList("§eRamenez l'arme à Jasper"));
 			im.addEnchant(Enchantment.QUICK_CHARGE, 1, false);
 			im.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+			im.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 			sword.setItemMeta(im);
 
 			player.getInventory().addItem(sword);
 		}
+		if(command.getName().equalsIgnoreCase("horse"))
+		{
+			Player player = Bukkit.getPlayer(args[0]);
+			startRace(player);
+		}
+
 		return false;
 	}
 
@@ -169,6 +194,19 @@ public class ConsoleCommand implements CommandExecutor {
 			stoneSword.setItemMeta(meta);
 		}
 		player.getInventory().addItem(stoneSword);
+		player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 5));
+
+		ItemStack ironHelmet = new ItemStack(Material.LEATHER_HELMET);
+		ItemStack ironChestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
+		ItemStack ironLeggings = new ItemStack(Material.LEATHER_LEGGINGS);
+		ItemStack ironBoots = new ItemStack(Material.LEATHER_BOOTS);
+
+		ironHelmet.addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 1);
+		ironChestplate.addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 1);
+		ironLeggings.addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 1);
+		ironBoots.addEnchantment(Enchantment.PROTECTION_ENVIRONMENTAL, 1);
+
+		player.getInventory().setArmorContents(new ItemStack[]{ironBoots, ironLeggings, ironChestplate, ironHelmet});
 
 		Location arenaLocation = BossQuestUtils.getAvailableArena(0);
 		if (arenaLocation == null) {
@@ -208,6 +246,60 @@ public class ConsoleCommand implements CommandExecutor {
 		};
 		task.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
 		HycraftQuestsAddons.getInstance().getActiveTasks().put(player.getUniqueId(), task);
+	}
+
+	public void startRace(Player player) {
+		player.teleport(startLocation);
+		Horse horse = (Horse) player.getWorld().spawnEntity(player.getLocation(), EntityType.HORSE);
+		horse.setOwner(player);
+		horse.setCustomName("Nicolas");
+		horse.setInvulnerable(true);
+		horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
+		horse.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.3);
+		horse.addPassenger(player);
+
+		startCountdown(player, horse);
+	}
+
+	private void startCountdown(Player player, Horse horse) {
+		new BukkitRunnable() {
+			int timeLeft = raceTimeLimit;
+
+			@Override
+			public void run() {
+				if (timeLeft <= 0 || !player.isOnline() || !horse.isValid()) {
+					cancelRace(player, horse);
+					cancel();
+					return;
+				}
+				player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
+						TextComponent.fromLegacyText("§eTemps restant: " + timeLeft + " secondes"));
+
+				if (FireListener.isPlayerInRegion(player, finishRegion)) {
+					completeRace(player, horse);
+					cancel();
+					return;
+				}
+
+				timeLeft--;
+			}
+		}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
+	}
+
+	public void completeRace(Player player, Horse horse) {
+		player.sendMessage(HycraftQuestsAddons.PREFIX + "\u00a7aFélicitations ! Vous êtes parvenu à temps au point de rendez-vous!");
+		horse.remove();
+	}
+
+	public void cancelRace(Player player, Horse horse) {
+		QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+		PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
+
+		acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).setStage(0);
+
+		player.sendMessage(HycraftQuestsAddons.PREFIX + "\u00a7cTemps écoulé ! Le pancréas s'est malheuresement déterioré...");
+		horse.remove();
+		player.teleport(spawnLocation);
 	}
 
 }

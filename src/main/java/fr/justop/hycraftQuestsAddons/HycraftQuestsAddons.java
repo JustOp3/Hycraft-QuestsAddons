@@ -3,6 +3,7 @@ package fr.justop.hycraftQuestsAddons;
 import fr.justop.hycraftQuestsAddons.commands.ConsoleCommand;
 import fr.justop.hycraftQuestsAddons.commands.PlayerCommand;
 import fr.justop.hycraftQuestsAddons.listeners.*;
+import fr.justop.hycraftQuestsAddons.placeholders.HycraftQuestsPlaceholder;
 import fr.justop.hycraftQuestsAddons.stages.StageItemFrameClick;
 import fr.justop.hycraftQuestsAddons.objects.CuboidRegion;
 import fr.skytasul.quests.api.QuestsAPI;
@@ -79,6 +80,14 @@ public final class HycraftQuestsAddons extends JavaPlugin {
 
         instance = this;
         questsAPI = QuestsAPI.getAPI();
+
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new HycraftQuestsPlaceholder(HycraftQuestsAddons.getQuestsAPI()).register();
+            getLogger().info("HycraftQuestsPlaceholder enregistré avec succès !");
+        } else {
+            getLogger().warning("PlaceholderAPI non détecté ! Le placeholder ne fonctionnera pas.");
+        }
+
         initializeItemFramesStage();
 
         regions.put("TeleportRegion", new CuboidRegion(
@@ -126,6 +135,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         pm.registerEvents(new ArrowListener(), this);
         pm.registerEvents(new FireListener(), this);
         pm.registerEvents(new FishingListener(), this);
+        pm.registerEvents(new GeneralListener(), this);
     }
 
     private void onCommands()
@@ -135,6 +145,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         this.getCommand("endDiplo").setExecutor(new ConsoleCommand());
         this.getCommand("q").setExecutor(new PlayerCommand());
         this.getCommand("arena").setExecutor(new ConsoleCommand());
+        this.getCommand("sword").setExecutor(new ConsoleCommand());
     }
 
     private void initializeItemFramesStage()

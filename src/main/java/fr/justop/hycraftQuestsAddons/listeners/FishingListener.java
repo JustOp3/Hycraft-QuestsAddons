@@ -16,12 +16,8 @@ public class FishingListener implements Listener {
 		if (event.getState() == PlayerFishEvent.State.CAUGHT_FISH && event.getCaught() instanceof Item caughtItem) {
 			Bukkit.getScheduler().runTaskLater(HycraftQuestsAddons.getInstance(), () -> {
 				ItemStack item = caughtItem.getItemStack();
-				event.getPlayer().sendMessage("a");
 				if (item.hasItemMeta() && item.hasItemMeta()) {
 					String customName = item.getItemMeta().toString();
-					event.getPlayer().sendMessage("Tu as pêché : " + customName);
-				} else {
-					event.getPlayer().sendMessage("Tu as pêché un poisson sans nom personnalisé.");
 				}
 			}, 2L);
 		}

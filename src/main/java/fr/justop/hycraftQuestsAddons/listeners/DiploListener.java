@@ -13,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.Objects;
 
@@ -50,7 +51,7 @@ public class DiploListener implements Listener
 
 			if (!HycraftQuestsAddons.getInstance().getAllowedBlocks().contains(blockType)) {
 				player.teleport(new Location(Bukkit.getWorld("Prehistoire"), -53, 219, 207, 90f, 0f));
-				player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous avez attisé la colère du diplodocus. Recommencez et têchez d'être plus discret!");
+				player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous avez attisé la colère du diplodocus. Recommencez et tâchez d'être plus discret!");
 				player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.0f);
 			}
 		}
@@ -76,6 +77,27 @@ public class DiploListener implements Listener
 				player.sendMessage(HycraftQuestsAddons.PREFIX + "§eVous ne pouvez pas executer de commande tant que la quête est en cours! Utilisez §6/q interrupt §epour interrompre la quête, vous pourrez la rejoindre plus tard.");
 			}
 
+		}
+	}
+
+	@EventHandler
+	public void onPlayerJoin(PlayerQuitEvent event)
+	{
+		QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+		PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(event.getPlayer());
+
+		if (acc == null) {
+			return;
+		}
+
+		if(2 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage() || 3 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage())
+		{
+			HycraftQuestsAddons.getInstance().getPhase1().put(event.getPlayer().getUniqueId(), "inactive");
+		}
+
+		if(4 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage())
+		{
+			HycraftQuestsAddons.getInstance().getPhase2().put(event.getPlayer().getUniqueId(), "inactive");
 		}
 	}
 }

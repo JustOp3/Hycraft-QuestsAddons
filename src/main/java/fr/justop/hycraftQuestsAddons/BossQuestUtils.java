@@ -127,7 +127,7 @@ public class BossQuestUtils {
 
 			@Override
 			public void run() {
-				if (wave >= 5) {
+				if (wave >= 3) {
 					if (mode == 0) {
 						return;
 					}

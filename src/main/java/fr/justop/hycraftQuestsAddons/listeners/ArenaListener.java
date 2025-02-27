@@ -113,7 +113,7 @@ public class ArenaListener implements Listener
             if(player.getInventory().contains(book)) return;
 
             player.getInventory().addItem(book);
-            player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous obtenez un §b§lVieux grimoire §aque personne ne semble avoir touché depuis plusieurs siècles. Melheuresement, les pages sont couvertes de symboles indescriptibles...");
+            player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous obtenez un §b§lVieux grimoire §aque personne ne semble avoir touché depuis plusieurs siècles. Melheuresement, les pages sont couvertes de symboles indescriptibles... Faites le examiner à Erin.");
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
         }
     }

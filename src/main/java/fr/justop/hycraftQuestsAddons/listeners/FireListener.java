@@ -1,5 +1,6 @@
 package fr.justop.hycraftQuestsAddons.listeners;
 
+import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.World;
 import com.sk89q.worldguard.WorldGuard;
@@ -79,20 +80,66 @@ public class FireListener implements Listener {
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent event) {
 		Player player = event.getPlayer();
-		Location location = player.getLocation();
 
-		if (location.getBlock().getType().name().contains("FIRE")) {
+
+		if (isPlayerTouchingFire(event.getTo())) {
 			if (isPlayerInRegion(player, "fire_region")) {
-				Location teleportLocation = new Location(player.getWorld(), 100, 65, 200); // Coordonnées de téléportation
-				player.teleport(teleportLocation);
-				player.sendMessage("\u00a7cVous avez touché le feu dans la région ! Téléportation...");
+				QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+				PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
+
+				if (acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(129))).getStage() == 1
+					|| acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(129))).getStage() == 2)
+				{
+					Location teleportLocation = new Location(player.getWorld(), 384.5, 2, -75.5, 90f, 0f);
+					player.teleport(teleportLocation);
+				}
+
+				else if (acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(129))).getStage() == 4
+						|| acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(129))).getStage() == 5
+						|| acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(129))).getStage() == 6)
+
+				{
+					Location teleportLocation = new Location(player.getWorld(), 393.5, 9, -105.5, 90f, 0f);
+					player.teleport(teleportLocation);
+				}
+
+				else if (acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(129))).getStage() == 8
+						|| acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(129))).getStage() == 9
+						|| acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(129))).getStage() == 10)
+				{
+					Location teleportLocation = new Location(player.getWorld(), 248.5, -18, -131.5, -90f, 0f);
+					player.teleport(teleportLocation);
+				}else{
+					return;
+				}
+
+				player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+				player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous avez touché les flammes, retour au début...");
 			}
 		}
 	}
 
-	private boolean isPlayerInRegion(Player player, String regionId) {
+	private boolean isPlayerTouchingFire(Location location) {
+		  double[][] offsets = {
+				{0, 0, 0},
+				{0.35, 0, 0},
+				{-0.35, 0, 0},
+				{0, 0, 0.35},
+				{0, 0, -0.35},
+		};
+
+		for (double[] offset : offsets) {
+			Location checkLocation = location.clone().add(offset[0], offset[1], offset[2]);
+			if (checkLocation.getBlock().getType() == Material.FIRE) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean isPlayerInRegion(Player player, String regionId) {
 		RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-		RegionManager regions = container.get((World) player.getWorld());
+		RegionManager regions = container.get(new BukkitWorld(player.getWorld()));
 
 		if (regions != null) {
 			BlockVector3 playerVector = BlockVector3.at(
