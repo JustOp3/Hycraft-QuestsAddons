@@ -13,6 +13,10 @@ import fr.skytasul.quests.api.stages.StageTypeRegistry;
 import fr.skytasul.quests.api.utils.XMaterial;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.core.mobs.ActiveMob;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.node.Node;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BossBar;
@@ -45,7 +49,8 @@ public final class HycraftQuestsAddons extends JavaPlugin {
             Material.BLUE_CONCRETE,
             Material.SLIME_BLOCK,
             Material.AIR,
-            Material.WATER
+            Material.WATER,
+            Material.GREEN_CONCRETE
     );
 
     private final Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
@@ -66,12 +71,13 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     private final Map<UUID, Integer> mobsKilled = new HashMap<>();
     private final Map<UUID, BossBar> bossBars = new HashMap<>();
     private final Map<UUID, BukkitRunnable> activeTasks = new HashMap<>();
-    private final Map<UUID, Boolean> bossPhase = new HashMap<>();
+    private final Map<UUID, Integer> bossPhase = new HashMap<>();
     private final Map<UUID, ActiveMob> bosses = new HashMap<>();
     private final Map<UUID, Boolean> spiritPlayers = new HashMap<>();
     private final Map<UUID, List<Location>> puzzleProgress = new HashMap<>();
     private final Set<ActiveMob> frozenBosses = new HashSet<>();
     private final Map<UUID, Location> activeCristalPos = new HashMap<>();
+    private final Map<UUID, BukkitRunnable> actionbarTasks = new HashMap<>();
 
 
 
@@ -108,6 +114,8 @@ public final class HycraftQuestsAddons extends JavaPlugin {
                 null
         ));
 
+        GoatsListener.startTrackingTask();
+
         this.triggerLocations.add(new Location(getServer().getWorld("prehistoire"), 390.0D, 89.0D, 396.0D));
         this.triggerLocations.add(new Location(getServer().getWorld("prehistoire"), 390.0D, 89.0D, 395.0D));
         this.triggerLocations.add(new Location(getServer().getWorld("prehistoire"), 390.0D, 89.0D, 394.0D));
@@ -122,6 +130,15 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         onCommands();
 
         Bukkit.getConsoleSender().sendMessage("Plugin initialisé");
+
+        new BukkitRunnable()
+        {
+
+            @Override
+            public void run() {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(),"o rl items");
+            }
+        }.runTaskLater(this,20*30);
     }
 
     private void onListeners()
@@ -146,6 +163,8 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         this.getCommand("q").setExecutor(new PlayerCommand());
         this.getCommand("arena").setExecutor(new ConsoleCommand());
         this.getCommand("sword").setExecutor(new ConsoleCommand());
+        this.getCommand("horse").setExecutor(new ConsoleCommand());
+        this.getCommand("giveCompassGoats").setExecutor(new ConsoleCommand());
     }
 
     private void initializeItemFramesStage()
@@ -189,6 +208,11 @@ public final class HycraftQuestsAddons extends JavaPlugin {
             }
         });
     }
+    public static void addPermission(User user, String permission) {
+        LuckPerms luckPerms = LuckPermsProvider.get();
+        user.data().add(Node.builder(permission).build());
+        luckPerms.getUserManager().saveUser(user);
+    }
 
     public void restoreInventory(Player player) {
         player.getInventory().clear();
@@ -206,7 +230,13 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     public static void removeNearbyEntities(Player player) {
         World world = player.getWorld();
         world.getEntities().stream()
-                .filter(entity -> entity.getLocation().distance(player.getLocation()) <= 100 && !(entity instanceof Player) && isSpecificMythicMob(entity,"Plante_mutante"))
+                .filter(entity -> entity.getLocation().distance(player.getLocation()) <= 100 && !(entity instanceof Player) &&
+                        (isSpecificMythicMob(entity,"Plante_mutante") ||
+                        isSpecificMythicMob(entity,"Mutant_Vine_SUMMON") ||
+                        isSpecificMythicMob(entity,"Mutant_Vine") ||
+                        isSpecificMythicMob(entity, "Stinger") ||
+                        isSpecificMythicMob(entity,"Golem_de_pierre") ||
+                        isSpecificMythicMob(entity, "Salamandre")))
                 .forEach(Entity::remove);
     }
 
@@ -287,7 +317,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
         return bossPlayers;
     }
 
-    public Map<UUID, Boolean> getBossPhase() {
+    public Map<UUID, Integer> getBossPhase() {
         return bossPhase;
     }
 
@@ -309,5 +339,9 @@ public final class HycraftQuestsAddons extends JavaPlugin {
 
     public Map<UUID, Location> getActiveCristalPos() {
         return activeCristalPos;
+    }
+
+    public Map<UUID, BukkitRunnable> getActionbarTasks() {
+        return actionbarTasks;
     }
 }

@@ -52,8 +52,11 @@ public class ArrowListener implements Listener
 		if(event.getHitBlock() == null) return;
 
 		Location hitLocation = event.getHitBlock().getLocation();
+		if(arrow.getShooter() == null) return;
 		if(!(Objects.requireNonNull(((Player) arrow.getShooter()).getInventory().getItemInMainHand().getItemMeta()).hasCustomModelData())) return;
-		if(!(Objects.requireNonNull(((Player) arrow.getShooter()).getInventory().getItemInMainHand().getItemMeta()).getCustomModelData() == 3061)) return;
+
+		int customModelData = Objects.requireNonNull(((Player) arrow.getShooter()).getInventory().getItemInMainHand().getItemMeta()).getCustomModelData();
+		if(! (customModelData <= 3071 && customModelData >= 3061)) return;
 
 		if(HycraftQuestsAddons.getInstance().getSpiritPlayers().containsKey(player.getUniqueId()))
 		{
@@ -65,14 +68,14 @@ public class ArrowListener implements Listener
 					loc.getBlock().setType(Material.ANDESITE);
 					HycraftQuestsAddons.removeNearbyEntities(player);
 
-					HycraftQuestsAddons.getInstance().getActiveTasks().get(player.getUniqueId()).cancel();
-					HycraftQuestsAddons.getInstance().getActiveTasks().remove(player.getUniqueId());
+					HycraftQuestsAddons.getInstance().getActionbarTasks().get(player.getUniqueId()).cancel();
+					HycraftQuestsAddons.getInstance().getActionbarTasks().remove(player.getUniqueId());
 
 					BossQuestUtils.freezeBoss(HycraftQuestsAddons.getInstance().getBosses().get(player.getUniqueId()), 15*20);
 					HycraftQuestsAddons.getInstance().getActiveCristalPos().remove(player.getUniqueId());
 					HycraftQuestsAddons.getInstance().getSpiritPlayers().remove(player.getUniqueId());
 					player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL,1.0f, 1.8f);
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§eVous avez temporairement mis le boss hors d'état de nuire. C'est le moment d'attaquer!");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous avez temporairement mis le boss hors d'état de nuire. C'est le moment de contre-attaquer!");
 				}
 			}
 		}
@@ -92,42 +95,42 @@ public class ArrowListener implements Listener
 			switch (progress.size())
 			{
 				case 1:
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aUn léger grincement se fait entendre...");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aUn léger grincement se fait entendre... (1/8)");
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.0f, 0.5f);
 					break;
 
 				case 2:
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLe grincement devient persistant...");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLe grincement devient persistant... (2/8)");
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.0f, 0.7f);
 					break;
 
 				case 3:
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLe grincement continue à gagner en puissance...");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLe grincement continue à gagner en puissance... (3/8)");
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.0f, 0.9f);
 					break;
 
 				case 4:
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous ressentez de légères secousses...");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous ressentez de légères secousses... (4/8)");
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.0f, 1.1f);
 					break;
 
 				case 5:
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLes secousses augmentent en intensité...");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLes secousses augmentent en intensité... (5/8)");
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.0f, 1.3f);
 					break;
 
 				case 6:
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLe terrain entier se met à trembler autour de vous...");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLe terrain entier se met à trembler autour de vous... (6/8)");
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.0f, 1.5f);
 					break;
 
 				case 7:
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous entendez un rugissement venu de la terre...");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous entendez un rugissement venu de la terre... (7/8)");
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_XYLOPHONE, 1.0f, 1.7f);
 					break;
 
 				case 8:
-					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aEntre le bruit et les tremblements, impossible de tenir debout. Vous perdez connaissance.");
+					player.sendMessage(HycraftQuestsAddons.PREFIX + "§aEntre le bruit et les tremblements, impossible de tenir debout. Vous perdez connaissance. (8/8)");
 					player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.0f);
 					HycraftQuestsAddons.getInstance().getPuzzleProgress().remove(player.getUniqueId());
 					player.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION, PotionEffect.INFINITE_DURATION, 2));
@@ -154,6 +157,6 @@ public class ArrowListener implements Listener
 	{
 		Random random = new Random();
 		Vector vec = relativeCristalsPos.get(random.nextInt(8));
-		return arenaLocation.add(vec);
+		return arenaLocation.clone().add(vec);
 	}
 }

@@ -9,6 +9,7 @@ import com.sk89q.worldguard.protection.regions.RegionQuery;
 import fr.justop.hycraftQuestsAddons.BossQuestUtils;
 import fr.justop.hycraftQuestsAddons.HycraftQuestsAddons;
 import fr.justop.hycraftQuestsAddons.listeners.FireListener;
+import fr.justop.hycraftQuestsAddons.listeners.GoatsListener;
 import fr.skytasul.quests.api.QuestsAPI;
 import fr.skytasul.quests.api.players.PlayerAccount;
 import io.lumine.mythic.api.adapters.AbstractLocation;
@@ -58,9 +59,9 @@ public class ConsoleCommand implements CommandExecutor {
 			"§6§lXandros §r§e: signal...",
 			"§6§lXandros §r§e: ...");
 
-	private final int raceTimeLimit = 60;
-	private final Location startLocation = new Location(Bukkit.getWorld("Préhistoire"), 100, 65, 100);
-	private final Location spawnLocation = new Location(Bukkit.getWorld("Préhistoire"), 50, 65, 50);
+	private final int raceTimeLimit = 90;
+	private final Location startLocation = new Location(Bukkit.getWorld("Prehistoire"), -103, -19, 444, -180f, 0f);
+	private final Location spawnLocation = new Location(Bukkit.getWorld("Prehistoire"), -88, -23, 446, 90f, 0f);
 	private final String finishRegion = "horse_region";
 
 	@Override
@@ -160,6 +161,12 @@ public class ConsoleCommand implements CommandExecutor {
 			Player player = Bukkit.getPlayer(args[0]);
 			startRace(player);
 		}
+		if(command.getName().equalsIgnoreCase("giveCompassGoats"))
+		{
+			Player player = Bukkit.getPlayer(args[0]);
+			ItemStack item = GoatsListener.createTrackingCompass();
+			player.getInventory().addItem(item);
+		}
 
 		return false;
 	}
@@ -194,7 +201,8 @@ public class ConsoleCommand implements CommandExecutor {
 			stoneSword.setItemMeta(meta);
 		}
 		player.getInventory().addItem(stoneSword);
-		player.getInventory().addItem(new ItemStack(Material.COOKED_BEEF, 5));
+		player.setHealth(20.0);
+		player.getInventory().setItem(8, new ItemStack(Material.COOKED_BEEF, 5));
 
 		ItemStack ironHelmet = new ItemStack(Material.LEATHER_HELMET);
 		ItemStack ironChestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
@@ -249,16 +257,44 @@ public class ConsoleCommand implements CommandExecutor {
 	}
 
 	public void startRace(Player player) {
-		player.teleport(startLocation);
-		Horse horse = (Horse) player.getWorld().spawnEntity(player.getLocation(), EntityType.HORSE);
-		horse.setOwner(player);
-		horse.setCustomName("Nicolas");
-		horse.setInvulnerable(true);
-		horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
-		horse.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.3);
-		horse.addPassenger(player);
 
-		startCountdown(player, horse);
+		new BukkitRunnable()
+		{
+
+			@Override
+			public void run() {
+				for(ItemStack item : player.getInventory().getContents())
+				{
+					if(item != null)
+					{
+						if(item.getItemMeta().hasCustomModelData()){
+							if(item.getItemMeta().getCustomModelData() == 85481)
+							{
+								player.teleport(startLocation);
+								Horse horse = (Horse) player.getWorld().spawnEntity(player.getLocation(), EntityType.HORSE);
+								horse.setOwner(player);
+								horse.setCustomName("Nicolas");
+								horse.setInvulnerable(true);
+								horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
+								horse.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.3);
+								horse.addPassenger(player);
+
+								startCountdown(player, horse);
+								return;
+							}
+						}
+					}
+
+
+				}
+				player.sendMessage(HycraftQuestsAddons.PREFIX + "§eAnnulation du défi: ton inventaire est plein! Libère ton inventaire et reviens voir Sacrofor.");
+				QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+				PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
+				acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).setStage(0);
+			}
+		}.runTaskLater(HycraftQuestsAddons.getInstance(), 10);
+
+
 	}
 
 	private void startCountdown(Player player, Horse horse) {
@@ -273,7 +309,7 @@ public class ConsoleCommand implements CommandExecutor {
 					return;
 				}
 				player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
-						TextComponent.fromLegacyText("§eTemps restant: " + timeLeft + " secondes"));
+						TextComponent.fromLegacyText("§eTemps restant: " + formatTime(timeLeft)));
 
 				if (FireListener.isPlayerInRegion(player, finishRegion)) {
 					completeRace(player, horse);
@@ -284,6 +320,12 @@ public class ConsoleCommand implements CommandExecutor {
 				timeLeft--;
 			}
 		}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
+	}
+
+	public String formatTime(int seconds) {
+		int minutes = seconds / 60;
+		int remainingSeconds = seconds % 60;
+		return String.format("%02d:%02d", minutes, remainingSeconds);
 	}
 
 	public void completeRace(Player player, Horse horse) {

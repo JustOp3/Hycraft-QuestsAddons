@@ -6,15 +6,13 @@ import fr.skytasul.quests.api.QuestsAPI;
 import fr.skytasul.quests.api.players.PlayerAccount;
 import io.lumine.mythic.bukkit.BukkitAPIHelper;
 import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
 import io.lumine.mythic.core.mobs.ActiveMob;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BossBar;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Firework;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -28,6 +26,8 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Arrays;
@@ -39,10 +39,10 @@ public class ArenaListener implements Listener
 {
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onEntityDeath(EntityDeathEvent event) {
-        LivingEntity entity = event.getEntity();
-        if (entity.getKiller() != null) {
-            Player player = entity.getKiller();
+    public void onEntityDeath(MythicMobDeathEvent event) {
+        ActiveMob entity = event.getMob();
+        if (event.getKiller() != null) {
+            Player player = (Player) event.getKiller();
             if (HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId())) {
                 event.getDrops().clear();
                 player.getInventory().setItem(1, null);
@@ -63,6 +63,32 @@ public class ArenaListener implements Listener
                         }
                     }.runTaskLater(HycraftQuestsAddons.getInstance(), 100);
                 }
+            }else if(HycraftQuestsAddons.getInstance().getBossPlayers().containsKey(player.getUniqueId()))
+            {
+                event.getDrops().clear();
+                player.getInventory().setItem(3, null);
+                player.getInventory().setItem(2, null);
+
+                if (entity.getMobType().equalsIgnoreCase("Mutant_flower")) {
+                    player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous êtes parvenu à vaincre le boss! Téléportation dans quelques secondes...");
+                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                    launchFireworks(player);
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            player.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION, PotionEffect.INFINITE_DURATION, 2));
+                            new BukkitRunnable()
+                            {
+
+                                @Override
+                                public void run() {
+                                    BossQuestUtils.endBossChallenge(player);
+                                }
+
+                            }.runTaskLater(HycraftQuestsAddons.getInstance(),60);
+                        }
+                    }.runTaskLater(HycraftQuestsAddons.getInstance(), 100);
+                }
             }
         }
     }
@@ -75,6 +101,25 @@ public class ArenaListener implements Listener
                 player.setHealth(20.0);
                 cancelArenaChallenge(player);
             }
+            if (HycraftQuestsAddons.getInstance().getBossPlayers().containsKey(player.getUniqueId()) && (player.getHealth() - event.getFinalDamage()) <= 0)
+            {
+                event.setCancelled(true);
+                player.setHealth(20.0);
+                BossQuestUtils.cancelBossChallenge(player);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onEntityDamage(EntityDamageByEntityEvent event) {
+        Entity entity = event.getEntity();
+        Entity damager = event.getDamager();
+
+        if (entity instanceof LivingEntity && entity.getCustomName() != null && entity.getCustomName().equals("Mutant Flower")) {
+
+            if (damager instanceof Arrow) {
+                event.setCancelled(true);
+            }
         }
     }
 
@@ -84,7 +129,13 @@ public class ArenaListener implements Listener
         Player player = event.getPlayer();
         if(HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId()))
         {
+            player.setHealth(20.0);
             cancelArenaChallenge(player);
+        }
+        if (HycraftQuestsAddons.getInstance().getBossPlayers().containsKey(player.getUniqueId()))
+        {
+            player.setHealth(20.0);
+            BossQuestUtils.cancelBossChallenge(player);
         }
     }
 
@@ -130,18 +181,18 @@ public class ArenaListener implements Listener
 
                 double healthPercentage = boss.getEntity().getHealth() / boss.getEntity().getMaxHealth();
 
-                if(healthPercentage <= 0.1)
+                if(healthPercentage <= 0.1 && HycraftQuestsAddons.getInstance().getBossPhase().get(player.getUniqueId()) == 2)
                 {
-                    HycraftQuestsAddons.getInstance().getBossPhase().put(player.getUniqueId(), true);
+                    HycraftQuestsAddons.getInstance().getBossPhase().put(player.getUniqueId(), 3);
                     HycraftQuestsAddons.getInstance().getSpiritPlayers().put(player.getUniqueId(),true);
                     BossQuestUtils.invokeSpirit(player);
                     BossQuestUtils.startDisplayingActionBar(player);
                     player.playSound(player.getLocation(), Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 1.0f,1.0f);
-                    player.sendMessage(HycraftQuestsAddons.PREFIX + "§eLe boss invoque les esprits du sanctuaire pour lui octroyer l'invulnérabilité! Neutralisez les en fichant une flèche bien placée en leur joyau.");
+                    player.sendMessage(HycraftQuestsAddons.PREFIX + "§eLe boss invoque les esprits du sanctuaire pour lui octroyer l'invulnérabilité! Neutralisez les en fichant une flèche bien placée en leur §6§ljoyau §e(Shroom lights)");
                 }
 
-                if (healthPercentage <= 0.5 && !HycraftQuestsAddons.getInstance().getBossPhase().get(player.getUniqueId())) {
-                    HycraftQuestsAddons.getInstance().getBossPhase().put(player.getUniqueId(), true);
+                if (healthPercentage <= 0.5 && HycraftQuestsAddons.getInstance().getBossPhase().get(player.getUniqueId()) == 1) {
+                    HycraftQuestsAddons.getInstance().getBossPhase().put(player.getUniqueId(), 2);
                     HycraftQuestsAddons.getInstance().getSpiritPlayers().put(player.getUniqueId(),true);
                     BossQuestUtils.invokeSpirit(player);
                     BossQuestUtils.startDisplayingActionBar(player);

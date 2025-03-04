@@ -14,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Objects;
 
@@ -83,21 +84,31 @@ public class DiploListener implements Listener
 	@EventHandler
 	public void onPlayerJoin(PlayerQuitEvent event)
 	{
-		QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
-		PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(event.getPlayer());
-
-		if (acc == null) {
-			return;
-		}
-
-		if(2 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage() || 3 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage())
+		new BukkitRunnable()
 		{
-			HycraftQuestsAddons.getInstance().getPhase1().put(event.getPlayer().getUniqueId(), "inactive");
-		}
 
-		if(4 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage())
-		{
-			HycraftQuestsAddons.getInstance().getPhase2().put(event.getPlayer().getUniqueId(), "inactive");
-		}
+			@Override
+			public void run() {
+				QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+				PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(event.getPlayer());
+
+				if (acc == null) {
+					event.getPlayer().sendMessage("Envoie un mp à TheRealJostophe2");
+					return;
+				}
+
+				if(2 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage() || 3 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage())
+				{
+					HycraftQuestsAddons.getInstance().getPhase1().put(event.getPlayer().getUniqueId(), "inactive");
+					event.getPlayer().sendMessage(HycraftQuestsAddons.PREFIX + "§eVous avez une quête en cours! Exécutez §b/q rejoin §epour rejoindre la zone de quête.");
+				}
+
+				if(4 == acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(115))).getStage())
+				{
+					event.getPlayer().sendMessage(HycraftQuestsAddons.PREFIX + "§eVous avez une quête en cours! Exécutez §b/q rejoin §epour rejoindre la zone de quête.");
+				}
+			}
+
+		}.runTaskLater(HycraftQuestsAddons.getInstance(),10);
 	}
 }

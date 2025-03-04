@@ -1,6 +1,7 @@
 package fr.justop.hycraftQuestsAddons.listeners;
 
 import fr.justop.hycraftQuestsAddons.HycraftQuestsAddons;
+import fr.justop.hycraftQuestsAddons.objects.ComposterLaunchTask;
 import fr.skytasul.quests.api.QuestsAPI;
 import fr.skytasul.quests.api.players.PlayerAccount;
 import org.bukkit.*;
@@ -18,7 +19,7 @@ import java.util.*;
 
 public class ComposterLaunch implements Listener {
 
-	private final int LAUNCH_HEIGHT = 200;
+	private static final int LAUNCH_HEIGHT = 200;
 	private static Set<Player> slowFallPlayers = new HashSet<>();
 	private static int indice = 0;
 	public static final Location TARGET_LOCATION = new Location(Bukkit.getWorld("prehistoire"), -34.5, 256, 207.5, 90f, 40f);
@@ -32,7 +33,7 @@ public class ComposterLaunch implements Listener {
 		Player player = event.getPlayer();
 		String message = event.getMessage();
 
-		if (message.equalsIgnoreCase("Kaboum!")) {
+		if (message.equalsIgnoreCase("Kaboum")) {
 			Block block = player.getLocation().getBlock();
 			QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
 			PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
@@ -43,39 +44,18 @@ public class ComposterLaunch implements Listener {
 
 				event.setCancelled(true);
 
-				Bukkit.getScheduler().runTask(HycraftQuestsAddons.getInstance(), () ->{
-					HycraftQuestsAddons.getInstance().boxPlayer(player);
-
-					new BukkitRunnable() {
-						int countdown = 3;
-
-						@Override
-						public void run() {
-							if (countdown > 0) {
-								String color = countdown == 1 ? "\u00a7c" : "\u00a7e";
-								player.sendTitle(color + "" + countdown, "", 0, 20, 0);
-								player.sendMessage(HycraftQuestsAddons.PREFIX + "§aLancement dans §e" + countdown + "§a...");
-								player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, 1.0f + (3 - countdown) * 0.2f);
-								countdown--;
-							} else {
-								this.cancel();
-
-								HycraftQuestsAddons.getInstance().unboxPlayer(player);
-								player.sendMessage("");
-								player.sendMessage("§6§lXandros §r§e: C'est parti mon kiki, on se reparle la haut!");
-								player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
-								launchPlayer(player);
-							}
-						}
-					}.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
-				});
-
+				new BukkitRunnable() {
+					@Override
+					public void run() {
+						new ComposterLaunchTask(player).runTask(HycraftQuestsAddons.getInstance());
+					}
+				}.runTask(HycraftQuestsAddons.getInstance());
 			}
 		}
 	}
 
 
-	private void launchPlayer(Player player) {
+	public static void launchPlayer(Player player) {
 		World world = player.getWorld();
 		World temporaryWorld = Bukkit.getWorld("mondesurvie");
 		player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0f, 1.0f);

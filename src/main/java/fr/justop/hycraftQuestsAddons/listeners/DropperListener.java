@@ -25,7 +25,7 @@ public class DropperListener implements Listener
         Quest quest = questsAPI.getQuestsManager().getQuest(102);
         if(quest == null) return;
 
-        if(acc.getQuestDatas(quest).getStage() == 2)
+        if(!(acc.getQuestDatas(quest).getStage() == 2))
         {
             Location playerLocation = player.getLocation();
             for (Location triggerLocation : HycraftQuestsAddons.getInstance().getTriggerLocations()) {
@@ -85,6 +85,6 @@ public class DropperListener implements Listener
 
         player.teleport(new Location(player.getWorld(), 386.0D, 91.0D, 392.0D, -45.0F, 0.0F));
         player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 1.0F);
-        player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous n'avez pas accès à cette zone pour le moment! Continuez votre aventure au fil de l'histoire, décrochez le rang §f\uA4C7 et commencez la quête '§bUne crevasse scintillante' pour y accéder. Utilise §b/rang §cpour plus d'informations.");
+        player.sendMessage(HycraftQuestsAddons.PREFIX + "§cVous n'avez pas accès à cette zone pour le moment! Continuez votre aventure au fil de l'histoire, décrochez le rang §f\uA4C7 §cet commencez la quête '§bUne crevasse scintillante' §cpour y accéder. Utilise §b/rang §cpour plus d'informations.");
     }
 }

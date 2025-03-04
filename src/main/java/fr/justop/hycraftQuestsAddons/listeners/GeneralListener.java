@@ -7,8 +7,10 @@ import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.vehicle.VehicleExitEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Objects;
 
@@ -17,10 +19,25 @@ public class GeneralListener implements Listener {
     @EventHandler
     public void onPlayerDismount(VehicleExitEvent event) {
         if (event.getExited() instanceof Player player && event.getVehicle() instanceof Horse horse) {
+            QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+            PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
             if(horse.getCustomName() == null) return;
-            if(!(horse.getCustomName().equalsIgnoreCase("Nicolas"))) return;
+            if(!(horse.getCustomName().equalsIgnoreCase("Nicolas")) || !(acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).getStage() == 1)) return;
             player.sendMessage(HycraftQuestsAddons.PREFIX + "\u00a7cVous ne pouvez pas descendre de votre cheval pendant la course !");
             event.setCancelled(true);
+        }
+    }
+    @EventHandler
+    public void onPlayerDrop(PlayerDropItemEvent event)
+    {
+        Player player = event.getPlayer();
+        QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+        PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
+
+        if(acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).getStage() == 1)
+        {
+            event.setCancelled(true);
+            player.sendMessage(HycraftQuestsAddons.PREFIX + "§cTu ne peux pas lâcher d'item durant la course!");
         }
     }
 
@@ -28,10 +45,19 @@ public class GeneralListener implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event)
     {
         Player player = event.getPlayer();
-        QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
-        PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
-        if(!(acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).getStage() == 1)) return;
+        new BukkitRunnable()
+        {
 
-        acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).setStage(0);
+            @Override
+            public void run() {
+                QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
+                PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
+                if(!(acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).getStage() == 1)) return;
+
+                acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).setStage(0);
+            }
+
+        }.runTaskLater(HycraftQuestsAddons.getInstance(),10);
+
     }
 }

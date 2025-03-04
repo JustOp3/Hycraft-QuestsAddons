@@ -88,6 +88,11 @@
             <id>placeholderapi</id>
             <url>https://repo.extendedclip.com/releases/</url>
         </repository>
+        <repository>
+            <id>oraxen</id>
+            <name>Oraxen Repository</name>
+            <url>https://repo.oraxen.com/releases</url>
+        </repository>
 
     </repositories>
 
@@ -230,5 +235,6 @@
             <version>2.11.6</version>
             <scope>provided</scope>
         </dependency>
+
     </dependencies>
 </project>
