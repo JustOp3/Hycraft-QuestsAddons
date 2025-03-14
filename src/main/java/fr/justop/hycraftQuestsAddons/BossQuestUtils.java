@@ -4,6 +4,7 @@ import fr.justop.hycraftQuestsAddons.listeners.ArrowListener;
 import fr.skytasul.quests.api.QuestsAPI;
 import fr.skytasul.quests.api.players.PlayerAccount;
 import io.lumine.mythic.api.mobs.MythicMob;
+import io.lumine.mythic.api.skills.placeholders.PlaceholderString;
 import io.lumine.mythic.bukkit.BukkitAdapter;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.core.mobs.ActiveMob;
@@ -17,8 +18,7 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
@@ -86,6 +86,14 @@ public class BossQuestUtils {
 				loc.setWorld(Bukkit.getWorld("BossFight1"));
 				return loc;
 			}
+		} else if (mode == 2) {
+			int max = HycraftQuestsAddons.getInstance().getShieldPlayers().isEmpty() ? -1 : Collections.max(HycraftQuestsAddons.getInstance().getShieldPlayers().values());
+			if (max <= 6) {
+				Location loc = HycraftQuestsAddons.getInstance().getArenaLocations().get(max + 1);
+				Location loc2 = loc.clone().subtract(0, 100, 0);
+				loc2.setWorld(Bukkit.getWorld("araignees"));
+				return loc2;
+			}
 		}
 
 		return null;
@@ -98,10 +106,20 @@ public class BossQuestUtils {
 				arenaLocation.clone().add(-10, 0, 9),
 				arenaLocation.clone().add(-10, 0, -9)
 		);
+		if(mode == 2){
+			mobSpawns = Arrays.asList(
+					arenaLocation.clone().add(-12, -99, 11),
+					arenaLocation.clone().add(-2, -99, 14),
+					arenaLocation.clone().add(12, -98, 14),
+					arenaLocation.clone().add(16, -95, -6),
+					arenaLocation.clone().add(11, -95, -21),
+					arenaLocation.clone().add(-5, -99, -18)
+			);
+		}
 
 
 		BukkitRunnable waves = getWaves(player, mobSpawns, mode);
-		int period = mode == 0 ? 20 * 20 : 60 * 20;
+		int period = (mode == 0 || mode == 2) ? 20 * 20 : 60 * 20;
 		HycraftQuestsAddons.getInstance().getActiveTasks().put(player.getUniqueId(), waves);
 		waves.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, period);
 	}
@@ -114,7 +132,8 @@ public class BossQuestUtils {
 			@Override
 			public void run() {
 				if (wave >= 3) {
-					if (mode == 0) {
+					if (mode == 0 || mode == 2) {
+						cancel();
 						return;
 					}
 				}
@@ -164,19 +183,68 @@ public class BossQuestUtils {
 					}
 				}
 				int mobCount = 0;
+				if(mode == 2){
+					MythicMob mythicMob = MythicBukkit.inst().getMobManager().getMythicMob("VanillaSpider").orElse(null);
+					mythicMob.setDisplayName(PlaceholderString.of(" "));
+					switch (wave){
+						case 0, 1:
+							for (Location loc : mobSpawns){
+                                ActiveMob activeMob = mythicMob.spawn(BukkitAdapter.adapt(loc), 1);
+								Entity entity = activeMob.getEntity().getBukkitEntity();
 
-				for (Location loc : mobSpawns) {
-					MythicMob mob = MythicBukkit.inst().getMobManager().getMythicMob("Plante_mutante").orElse(null);
-					if (mob != null) {
-						mob.spawn(BukkitAdapter.adapt(loc), 1);
-						mobCount++;
+                                if (entity instanceof Mob mob) {
+                                    mob.setTarget(player);
+                                    Objects.requireNonNull(mob.getAttribute(Attribute.GENERIC_FOLLOW_RANGE)).setBaseValue(50);
+									Objects.requireNonNull(mob.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE)).setBaseValue(4.0);
+									Objects.requireNonNull(mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED)).setBaseValue(0.30);
+                                }
+
+								mobCount ++;
+                            }
+							break;
+
+						case 2:
+							for (Location loc : mobSpawns){
+								ActiveMob activeMob = mythicMob.spawn(BukkitAdapter.adapt(loc), 1);
+								ActiveMob activeMob2 = mythicMob.spawn(BukkitAdapter.adapt(loc), 1);
+
+								Entity entity = activeMob.getEntity().getBukkitEntity();
+								Entity entity2 = activeMob2.getEntity().getBukkitEntity();
+								if (entity instanceof Mob mob && entity2 instanceof Mob mob2) {
+									mob.setTarget(player);
+									mob2.setTarget(player);
+									Objects.requireNonNull(mob.getAttribute(Attribute.GENERIC_FOLLOW_RANGE)).setBaseValue(50);
+									Objects.requireNonNull(mob2.getAttribute(Attribute.GENERIC_FOLLOW_RANGE)).setBaseValue(50);
+									Objects.requireNonNull(mob.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE)).setBaseValue(4.0);
+									Objects.requireNonNull(mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED)).setBaseValue(0.30);
+									Objects.requireNonNull(mob2.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE)).setBaseValue(4.0);
+									Objects.requireNonNull(mob2.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED)).setBaseValue(0.30);
+								}
+
+								mobCount += 2;
+                            }
+							break;
+                    }
+				}
+				if(mode == 0){
+					for (Location loc : mobSpawns) {
+						MythicMob mob = MythicBukkit.inst().getMobManager().getMythicMob("Plante_mutante").orElse(null);
+						if (mob != null) {
+							mob.spawn(BukkitAdapter.adapt(loc), 1);
+							mobCount++;
+						}
 					}
 				}
 
+
 				player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 1.0f, 1.0f);
 				String msg = mode == 0 ? "§aLa vague §e" + (wave + 1) + "§a est apparue. §e(+4)" : "§aLe boss a fait apparaître des renforts!";
+				int amount = (wave == 0 || wave == 1) ? 12 : 18;
+				if (mode == 2){
+					msg = "§aLa vague §e" + (wave + 1) + "§a est apparue. §e(+" + amount + ")";
+				}
 				player.sendMessage(HycraftQuestsAddons.PREFIX + msg);
-				if (mode == 0)
+				if (mode == 0 || mode == 2)
 					HycraftQuestsAddons.getInstance().getRemainingMobs().put(player.getUniqueId(), HycraftQuestsAddons.getInstance().getRemainingMobs().get(player.getUniqueId()) + mobCount);
 				wave++;
 			}
@@ -238,6 +306,12 @@ public class BossQuestUtils {
 		HycraftQuestsAddons.getInstance().getSpiritPlayers().remove(player.getUniqueId());
 		HycraftQuestsAddons.getInstance().getBossPhase().remove(player.getUniqueId());
 
+		if (HycraftQuestsAddons.getInstance().getActiveCristalPos().containsKey(player.getUniqueId())) {
+			Location loc = HycraftQuestsAddons.getInstance().getActiveCristalPos().get(player.getUniqueId());
+			loc.getBlock().setType(Material.ANDESITE);
+			HycraftQuestsAddons.getInstance().getActiveCristalPos().remove(player.getUniqueId());
+		}
+
 		ActiveMob boss = HycraftQuestsAddons.getInstance().getBosses().get(player.getUniqueId());
 		boss.remove();
 		HycraftQuestsAddons.getInstance().getBosses().remove(player.getUniqueId());
@@ -251,13 +325,14 @@ public class BossQuestUtils {
 			HycraftQuestsAddons.getInstance().getActiveTasks().remove(player.getUniqueId());
 		}
 
+		player.setHealth(20.0);
 		player.teleport(new Location(Bukkit.getWorld("Prehistoire"), -44.5 , -18, -293.5, 180.0f, 0.0f));
 		HycraftQuestsAddons.getInstance().getBossPlayers().remove(player.getUniqueId());
 
 		QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
 		PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
 
-		acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(125))).setStage(7); //todo: edit
+		acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(125))).setStage(7);
 		player.sendMessage(HycraftQuestsAddons.PREFIX + "§cTu as échoué! Tâche d'être en meilleure forme au prochain essai!");
 		player.sendMessage(HycraftQuestsAddons.PREFIX + "§eAfin de réessayer le boss, exécute §b/q retry §eà tout moment.");
 		player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.0f);
@@ -269,6 +344,7 @@ public class BossQuestUtils {
 		HycraftQuestsAddons.removeNearbyEntities(player);
 		player.teleport(new Location(Bukkit.getWorld("Prehistoire"), -44.5 , -18, -293.5, 180.0f, 0.0f));
 		player.removePotionEffect(PotionEffectType.CONFUSION);
+		player.setHealth(20.0);
 		HycraftQuestsAddons.getInstance().getBossPlayers().remove(player.getUniqueId());
 		UUID playerId = player.getUniqueId();
 		HycraftQuestsAddons.removeNearbyEntities(player);

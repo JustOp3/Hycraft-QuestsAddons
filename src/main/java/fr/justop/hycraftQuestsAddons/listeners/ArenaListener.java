@@ -8,6 +8,7 @@ import io.lumine.mythic.bukkit.BukkitAPIHelper;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
 import io.lumine.mythic.core.mobs.ActiveMob;
+import io.lumine.mythic.core.skills.mechanics.FireworkEffect;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BossBar;
@@ -40,20 +41,25 @@ public class ArenaListener implements Listener
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDeath(MythicMobDeathEvent event) {
-        ActiveMob entity = event.getMob();
+        ActiveMob mob =  MythicBukkit.inst().getMobManager().getActiveMob(event.getEntity().getUniqueId()).orElse(null);
         if (event.getKiller() != null) {
             Player player = (Player) event.getKiller();
-            if (HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId())) {
+            if (HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId()) || HycraftQuestsAddons.getInstance().getShieldPlayers().containsKey(player.getUniqueId())) {
+                int mode = HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId()) ? 0 : 2;
                 event.getDrops().clear();
                 player.getInventory().setItem(1, null);
                 player.getInventory().setItem(2, null);
                 int remaining = HycraftQuestsAddons.getInstance().getRemainingMobs().get(player.getUniqueId()) - 1;
                 HycraftQuestsAddons.getInstance().getRemainingMobs().put(player.getUniqueId(), remaining);
                 HycraftQuestsAddons.getInstance().getMobsKilled().put(player.getUniqueId(), HycraftQuestsAddons.getInstance().getMobsKilled().getOrDefault(player.getUniqueId(), 0) + 1);
-                updateBossBar(player);
+                updateBossBar(player, mode);
 
-                if (HycraftQuestsAddons.getInstance().getRemainingMobs().get(player.getUniqueId()) <= 0) {
-                    player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous êtes parvenu à vaincre toutes les vagues de Plantes Mutantes! Téléportation dans 5 secondes...");
+                if (HycraftQuestsAddons.getInstance().getRemainingMobs().get(player.getUniqueId()) <= 0)
+                {
+                    if (HycraftQuestsAddons.getInstance().getShieldPlayers().containsKey(player.getUniqueId())){
+                        if (HycraftQuestsAddons.getInstance().getMobsKilled().get(player.getUniqueId()) < 20) return;
+                    }
+                    player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous êtes parvenu à vaincre toutes les vagues! Téléportation dans 5 secondes...");
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                     launchFireworks(player);
                     new BukkitRunnable() {
@@ -69,7 +75,9 @@ public class ArenaListener implements Listener
                 player.getInventory().setItem(3, null);
                 player.getInventory().setItem(2, null);
 
-                if (entity.getMobType().equalsIgnoreCase("Mutant_flower")) {
+                if(mob == null) return;
+
+                if (mob.getMobType().equalsIgnoreCase("Mutant_flower")) {
                     player.sendMessage(HycraftQuestsAddons.PREFIX + "§aVous êtes parvenu à vaincre le boss! Téléportation dans quelques secondes...");
                     player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                     launchFireworks(player);
@@ -96,7 +104,7 @@ public class ArenaListener implements Listener
     @EventHandler
     public void onPlayerDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId()) && (player.getHealth() - event.getFinalDamage()) <= 0) {
+            if ((HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId()) && (player.getHealth() - event.getFinalDamage()) <= 0) || (HycraftQuestsAddons.getInstance().getShieldPlayers().containsKey(player.getUniqueId()) && (player.getHealth() - event.getFinalDamage()) <= 0)) {
                 event.setCancelled(true);
                 player.setHealth(20.0);
                 cancelArenaChallenge(player);
@@ -127,7 +135,7 @@ public class ArenaListener implements Listener
     public void onPlayerQuit(PlayerQuitEvent event)
     {
         Player player = event.getPlayer();
-        if(HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId()))
+        if(HycraftQuestsAddons.getInstance().getActivePlayers().containsKey(player.getUniqueId()) || HycraftQuestsAddons.getInstance().getShieldPlayers().containsKey(player.getUniqueId()))
         {
             player.setHealth(20.0);
             cancelArenaChallenge(player);
@@ -211,6 +219,11 @@ public class ArenaListener implements Listener
 
     private void cancelArenaChallenge(Player player)
     {
+        int mode = 0;
+        if (HycraftQuestsAddons.getInstance().getShieldPlayers().containsKey(player.getUniqueId())){
+            mode = 2;
+        }
+
         HycraftQuestsAddons.getInstance().getRemainingMobs().remove(player.getUniqueId());
         HycraftQuestsAddons.getInstance().getMobsKilled().remove(player.getUniqueId());
         if (HycraftQuestsAddons.getInstance().getBossBars().containsKey(player.getUniqueId())) {
@@ -225,13 +238,21 @@ public class ArenaListener implements Listener
             HycraftQuestsAddons.getInstance().getActiveTasks().remove(player.getUniqueId());
         }
 
-        player.teleport(new Location(Bukkit.getWorld("Prehistoire"), -44.5 , -18, -293.5, 180.0f, 0.0f));
+        Location loc = mode == 0 ? new Location(Bukkit.getWorld("Prehistoire"), -44.5 , -18, -293.5, 180.0f, 0.0f) : new Location(Bukkit.getWorld("Prehistoire"), -51.5, -1, -514.5, -45f, 0f);
+        player.teleport(loc);
+        player.setHealth(20.0);
         HycraftQuestsAddons.getInstance().getActivePlayers().remove(player.getUniqueId());
+        HycraftQuestsAddons.getInstance().getShieldPlayers().remove(player.getUniqueId());
 
         QuestsAPI questsAPI = HycraftQuestsAddons.getQuestsAPI();
         PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
 
-        acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(118))).setStage(7);
+        if(mode == 0){
+            acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(118))).setStage(7);
+        }else {
+            acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(138))).setStage(1);
+        }
+
         player.sendMessage(HycraftQuestsAddons.PREFIX + "§cTu as échoué! Tache d'être plus agile au prochain essai!");
         player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.0f);
 
@@ -239,9 +260,16 @@ public class ArenaListener implements Listener
 
 
     private void endArenaChallenge(Player player) {
+        int mode = 0;
+        if (HycraftQuestsAddons.getInstance().getShieldPlayers().containsKey(player.getUniqueId())){
+            mode = 2;
+        }
         HycraftQuestsAddons.getInstance().restoreInventory(player);
-        player.teleport(new Location(Bukkit.getWorld("Prehistoire"), -44.5 , -18, -293.5, 180.0f, 0.0f));
+        Location loc = mode == 0 ? new Location(Bukkit.getWorld("Prehistoire"), -44.5 , -18, -293.5, 180.0f, 0.0f) : new Location(Bukkit.getWorld("Prehistoire"), -51.5, -1, -514.5, -45f, 0f);
+        player.teleport(loc);
+        player.setHealth(20.0);
         HycraftQuestsAddons.getInstance().getActivePlayers().remove(player.getUniqueId());
+        HycraftQuestsAddons.getInstance().getShieldPlayers().remove(player.getUniqueId());
         UUID playerId = player.getUniqueId();
         if (HycraftQuestsAddons.getInstance().getBossBars().containsKey(playerId)) {
             HycraftQuestsAddons.getInstance().getBossBars().get(playerId).removeAll();
@@ -252,24 +280,26 @@ public class ArenaListener implements Listener
             HycraftQuestsAddons.getInstance().getActiveTasks().get(player.getUniqueId()).cancel();
             HycraftQuestsAddons.getInstance().getActiveTasks().remove(player.getUniqueId());
         }
-
-        player.sendMessage(HycraftQuestsAddons.PREFIX + "§aParlez à Donovan");
+        String msg = mode == 0 ? HycraftQuestsAddons.PREFIX + "§aParlez à Donovan" : HycraftQuestsAddons.PREFIX + "§aRetournez voir Erin";
+        player.sendMessage(msg);
         player.playSound(player.getLocation(), Sound.ITEM_FIRECHARGE_USE, 1.0f, 1.0f);
     }
 
-    private void updateBossBar(Player player) {
+    private void updateBossBar(Player player, int mode) {
         UUID playerId = player.getUniqueId();
         BossBar bossBar = HycraftQuestsAddons.getInstance().getBossBars().get(playerId);
         if (bossBar != null) {
             int killed = HycraftQuestsAddons.getInstance().getMobsKilled().getOrDefault(playerId, 0);
             int total = HycraftQuestsAddons.getInstance().getRemainingMobs().getOrDefault(playerId, 0) + killed;
-            bossBar.setTitle("§eProgression: " + killed + "/" + total);
+            String c = mode == 0 ? "§e" : "§b";
+            bossBar.setTitle(c + "Progression: " + killed + "/" + total);
             if (total > 0) {
                 bossBar.setProgress(Math.max(0.01, (double) killed / total));
             } else {
                 bossBar.setProgress(1.0);
             }
-            bossBar.setColor(BarColor.YELLOW);
+            BarColor color = mode == 0 ? BarColor.YELLOW : BarColor.BLUE;
+            bossBar.setColor(color);
         }
 
     }

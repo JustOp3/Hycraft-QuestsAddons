@@ -78,6 +78,7 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     private final Set<ActiveMob> frozenBosses = new HashSet<>();
     private final Map<UUID, Location> activeCristalPos = new HashMap<>();
     private final Map<UUID, BukkitRunnable> actionbarTasks = new HashMap<>();
+    private final Map<UUID, Integer> shieldPlayers = new HashMap<>();
 
 
 
@@ -236,7 +237,8 @@ public final class HycraftQuestsAddons extends JavaPlugin {
                         isSpecificMythicMob(entity,"Mutant_Vine") ||
                         isSpecificMythicMob(entity, "Stinger") ||
                         isSpecificMythicMob(entity,"Golem_de_pierre") ||
-                        isSpecificMythicMob(entity, "Salamandre")))
+                        isSpecificMythicMob(entity, "Salamandre") ||
+                        isSpecificMythicMob(entity, "VanillaSpider")))
                 .forEach(Entity::remove);
     }
 
@@ -344,4 +346,6 @@ public final class HycraftQuestsAddons extends JavaPlugin {
     public Map<UUID, BukkitRunnable> getActionbarTasks() {
         return actionbarTasks;
     }
+
+    public Map<UUID, Integer> getShieldPlayers() {return shieldPlayers;}
 }

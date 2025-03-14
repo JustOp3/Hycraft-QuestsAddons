@@ -48,10 +48,12 @@ public class DropperListener implements Listener
         for (String name : HycraftQuestsAddons.getInstance().getRegions().keySet()) {
             if (HycraftQuestsAddons.getInstance().getRegions().get("TeleportRegion").isInside(to)) {
                 CuboidRegion region = HycraftQuestsAddons.getInstance().getRegions().get("TeleportRegion");
-                if (to.getBlock().getType() == Material.WATER && HycraftQuestsAddons.getInstance().getPlayerConstraints().get(player.getUniqueId())) {
-                    HycraftQuestsAddons.getInstance().getPlayerConstraints().remove(player.getUniqueId());
-                    player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0F, 1.0F);
-                    player.sendMessage(HycraftQuestsAddons.PREFIX + "§aFélicitation! Vous êtes parvenu à atteindre le fond de la crevasse sans toucher les parois!");
+                if(HycraftQuestsAddons.getInstance().getPlayerConstraints().containsKey(player.getUniqueId())){
+                    if (to.getBlock().getType() == Material.WATER && HycraftQuestsAddons.getInstance().getPlayerConstraints().get(player.getUniqueId())) {
+                        HycraftQuestsAddons.getInstance().getPlayerConstraints().remove(player.getUniqueId());
+                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0F, 1.0F);
+                        player.sendMessage(HycraftQuestsAddons.PREFIX + "§aFélicitation! Vous êtes parvenu à atteindre le fond de la crevasse sans toucher les parois!");
+                    }
                 }
                 if(event.getFrom().getY() > to.getY() && player.isOnGround() && HycraftQuestsAddons.getInstance().getPlayerConstraints().containsKey(player.getUniqueId()))
                 {

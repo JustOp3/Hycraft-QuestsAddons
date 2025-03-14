@@ -130,7 +130,8 @@ public class ConsoleCommand implements CommandExecutor {
 		if(command.getName().equalsIgnoreCase("arena"))
 		{
 			Player player = Bukkit.getPlayer(args[0]);
-			startArenaChallenge(player);
+			int mode = Integer.parseInt(args[1]);
+			startArenaChallenge(player, mode);
 			return true;
 		}
 		if(command.getName().equalsIgnoreCase("boss"))
@@ -190,7 +191,7 @@ public class ConsoleCommand implements CommandExecutor {
 
 	}
 
-	private void startArenaChallenge(Player player) {
+	private void startArenaChallenge(Player player, int mode) {
 		HycraftQuestsAddons.saveInventory(player);
 		player.getInventory().clear();
 
@@ -202,7 +203,8 @@ public class ConsoleCommand implements CommandExecutor {
 		}
 		player.getInventory().addItem(stoneSword);
 		player.setHealth(20.0);
-		player.getInventory().setItem(8, new ItemStack(Material.COOKED_BEEF, 5));
+		player.getInventory().setItem(8, new ItemStack(Material.COOKED_BEEF, 10));
+		player.getInventory().setItemInOffHand(new ItemStack(Material.SHIELD));
 
 		ItemStack ironHelmet = new ItemStack(Material.LEATHER_HELMET);
 		ItemStack ironChestplate = new ItemStack(Material.LEATHER_CHESTPLATE);
@@ -216,20 +218,29 @@ public class ConsoleCommand implements CommandExecutor {
 
 		player.getInventory().setArmorContents(new ItemStack[]{ironBoots, ironLeggings, ironChestplate, ironHelmet});
 
-		Location arenaLocation = BossQuestUtils.getAvailableArena(0);
+		Location arenaLocation = mode == 0 ? BossQuestUtils.getAvailableArena(0) : BossQuestUtils.getAvailableArena(2);
 		if (arenaLocation == null) {
 			player.sendMessage("\u00a7cAucune arène disponible.");
 			HycraftQuestsAddons.getInstance().restoreInventory(player);
 			return;
 		}
 
-		arenaLocation.setWorld(Bukkit.getWorld("Challenge"));
 		player.teleport(arenaLocation);
-		HycraftQuestsAddons.getInstance().getActivePlayers().put(player.getUniqueId(), HycraftQuestsAddons.getInstance().getArenaLocations().indexOf(arenaLocation));
+		arenaLocation.setWorld(Bukkit.getWorld("BossFight1"));
+		arenaLocation.setY(100);
+		if(mode == 0){
+			HycraftQuestsAddons.getInstance().getActivePlayers().put(player.getUniqueId(), HycraftQuestsAddons.getInstance().getArenaLocations().indexOf(arenaLocation));
+			arenaLocation.setWorld(Bukkit.getWorld("Challenge"));
+		}
+		if (mode == 2){
+			HycraftQuestsAddons.getInstance().getShieldPlayers().put(player.getUniqueId(), HycraftQuestsAddons.getInstance().getArenaLocations().indexOf(arenaLocation));
+			arenaLocation.setWorld(Bukkit.getWorld("araignees"));
+		}
 		HycraftQuestsAddons.getInstance().getRemainingMobs().put(player.getUniqueId(), 0);
 		HycraftQuestsAddons.getInstance().getMobsKilled().put(player.getUniqueId(), 0);
 
-		BossBar bossBar = Bukkit.createBossBar("§eProgression: 0/0", BarColor.YELLOW, BarStyle.SOLID);
+		BarColor color = mode == 0 ? BarColor.YELLOW : BarColor.BLUE;
+		BossBar bossBar = Bukkit.createBossBar("§bProgression: 0/0", color, BarStyle.SOLID);
 		bossBar.addPlayer(player);
 		bossBar.setVisible(true);
 		HycraftQuestsAddons.getInstance().getBossBars().put(player.getUniqueId(), bossBar);
@@ -247,13 +258,14 @@ public class ConsoleCommand implements CommandExecutor {
 					player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, 1.0f);
 					countdown--;
 				} else {
-					BossQuestUtils.startMobWaves(player, arenaLocation, 0);
+					BossQuestUtils.startMobWaves(player, arenaLocation, mode);
 					cancel();
 				}
 			}
 		};
-		task.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
 		HycraftQuestsAddons.getInstance().getActiveTasks().put(player.getUniqueId(), task);
+		task.runTaskTimer(HycraftQuestsAddons.getInstance(), 0, 20);
+
 	}
 
 	public void startRace(Player player) {
@@ -338,6 +350,18 @@ public class ConsoleCommand implements CommandExecutor {
 		PlayerAccount acc = questsAPI.getPlugin().getPlayersManager().getAccount(player);
 
 		acc.getQuestDatas(Objects.requireNonNull(questsAPI.getQuestsManager().getQuest(132))).setStage(0);
+		for(ItemStack im : player.getInventory().getContents()){
+			if(im != null){
+				if (im.hasItemMeta()){
+					if (im.getItemMeta().hasCustomModelData()){
+						if(im.getItemMeta().getCustomModelData() == 85481){
+							player.getInventory().remove(im);
+						}
+					}
+				}
+			}
+
+		}
 
 		player.sendMessage(HycraftQuestsAddons.PREFIX + "\u00a7cTemps écoulé ! Le pancréas s'est malheuresement déterioré...");
 		horse.remove();
